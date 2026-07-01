@@ -97,3 +97,51 @@ export interface ComparisonMatrix {
   status: 'draft' | 'published';
 }
 
+export interface Block {
+  id: string;
+  type: 'hero' | 'richText' | 'image' | 'gallery' | 'video' | 'graph' | 'stat' | 'quote' | 'materialsUsed' | 'twoColumn' | 'cta';
+  title?: string;
+  location?: string;
+  credit?: string;
+  creditLink?: string;
+  content?: string; // Markdown or rich text string
+  imageUrl?: string;
+  caption?: string;
+  layout?: 'full-bleed' | 'contained' | 'left' | 'right';
+  images?: { url: string; caption?: string }[];
+  source?: string; // For video: uploaded url or embed url
+  poster?: string;
+  autoplay?: boolean;
+  loop?: boolean;
+  muted?: boolean;
+  controls?: boolean;
+  chartType?: 'bar' | 'line' | 'pie' | 'stat';
+  dataSeries?: { label: string; value: number }[];
+  colorOverride?: string;
+  value?: string;
+  label?: string;
+  quoteSource?: 'testimonial' | 'custom';
+  testimonialId?: string;
+  quoteText?: string;
+  quoteAuthor?: string;
+  finishIds?: string[]; // Referenced Finish entries
+  leftBlock?: Block | null;
+  rightBlock?: Block | null;
+  prefillNote?: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  slug: string;
+  status: 'draft' | 'published';
+  verticals: string[];
+  spaceTypes: string[];
+  featuredOnHomepage: boolean;
+  homepageOrder?: number;
+  blocks: Block[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+

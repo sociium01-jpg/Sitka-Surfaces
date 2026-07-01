@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { VisualizerScene, VisualizerZone, Finish, HubPageSectionConfig, FAQ, ComparisonMatrix } from '@/types/visualizer';
+import { VisualizerScene, VisualizerZone, Finish, HubPageSectionConfig, FAQ, ComparisonMatrix, Project } from '@/types/visualizer';
 import { defaultScene, FINISHES } from '@/lib/visualizerScene';
 
 const STORAGE_PATH = path.join(process.cwd(), 'src/lib/visualizerDb.json');
@@ -24,6 +24,8 @@ interface VisualizerJSONDb {
   hubConfigs: HubPageSectionConfig[];
   faqs: FAQ[];
   matrices: ComparisonMatrix[];
+  projects: Project[];
+  spaceTypes: { id: string; name: string }[];
 }
 
 const getDefaultDbData = (): VisualizerJSONDb => {
@@ -161,6 +163,126 @@ const getDefaultDbData = (): VisualizerJSONDb => {
     },
   ];
 
+  const initialSpaceTypes = [
+    { id: 'kitchen', name: 'Kitchen' },
+    { id: 'office', name: 'Office' },
+    { id: 'hospitality', name: 'Hospitality' },
+    { id: 'living', name: 'Living' },
+    { id: 'retail', name: 'Retail' },
+    { id: 'facade', name: 'Facade' },
+  ];
+
+  const initialProjects: Project[] = [
+    {
+      id: 'amber-house-residence',
+      name: 'Amber House Residence',
+      slug: 'amber-house-residence',
+      status: 'published',
+      verticals: ['Veneer', 'Laminates'],
+      spaceTypes: ['Kitchen', 'Living'],
+      featuredOnHomepage: true,
+      homepageOrder: 1,
+      blocks: [
+        {
+          id: 'b1',
+          type: 'hero',
+          title: 'Amber House Residence',
+          location: 'Bangalore',
+          imageUrl: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80',
+          credit: 'Studio Meridian Architects',
+          layout: 'full-bleed'
+        },
+        {
+          id: 'b2',
+          type: 'richText',
+          content: '### The Challenge\n\nThe clients wanted a high-end, editorial feel for their open-plan kitchen and dining area. The space needed to stand up to heavy daily cooking use while maintaining a seamless, organic timber backdrop that matched the dining table and feature wall.'
+        },
+        {
+          id: 'b3',
+          type: 'richText',
+          content: '### The Material Solution\n\nStudio Meridian specified Sitka American Walnut Crown-Cut veneer sequence-matched panels to wrap the entire dining backdrop and TV run. Underneath the veneer, Sitka BWP Marine plywood cores were specified to guarantee long-term warp resistance. The active kitchen cabinet run was faced with Chalk White Super-Matte laminates featuring anti-fingerprint coating to absorb grease splashes and finger marks.'
+        },
+        {
+          id: 'b4',
+          type: 'graph',
+          chartType: 'bar',
+          title: 'Installation and Cost Metrics',
+          dataSeries: [
+            { label: 'Installation Time (Days)', value: 12 },
+            { label: 'Waste Material (%)', value: 8 },
+            { label: 'Client Satisfaction Score', value: 98 }
+          ]
+        },
+        {
+          id: 'b5',
+          type: 'quote',
+          quoteSource: 'custom',
+          quoteText: 'We wanted a materials solution that felt organic but performed with the precision of high-pressure engineering. Sitka delivered exactly that.',
+          quoteAuthor: 'Gautam Mehta, Principal Architect'
+        },
+        {
+          id: 'b6',
+          type: 'materialsUsed',
+          finishIds: ['ply-walnut', 'lam-charcoal']
+        },
+        {
+          id: 'b7',
+          type: 'cta',
+          label: 'Get This Look',
+          prefillNote: 'Hi! I am interested in the Amber House look using American Walnut Veneer and Matte Charcoal Laminates.'
+        }
+      ]
+    },
+    {
+      id: 'northline-studio-office',
+      name: 'Northline Studio Office',
+      slug: 'northline-studio-office',
+      status: 'published',
+      verticals: ['Plywood', 'Decoratives'],
+      spaceTypes: ['Office'],
+      featuredOnHomepage: true,
+      homepageOrder: 2,
+      blocks: [
+        {
+          id: 'b8',
+          type: 'hero',
+          title: 'Northline Studio Office',
+          location: 'Mumbai',
+          imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+          credit: 'Formwork Interiors',
+          layout: 'contained'
+        },
+        {
+          id: 'b9',
+          type: 'richText',
+          content: '### The Curvilinear Workplace\n\nA growing digital agency needed curved partitions and sound-dampening panels for meeting pods to reduce echoes across a high-ceiling concrete warehouse conversion.'
+        },
+        {
+          id: 'b10',
+          type: 'stat',
+          value: '180mm',
+          label: 'Minimum radius curves achieved with flexible plywood columns.'
+        },
+        {
+          id: 'b11',
+          type: 'richText',
+          content: '### Acoustically Sound Pods\n\nInside the meeting pods, Ribbed Charcoal Acoustic Panels were bonded to PET recycled felt backers to absorb high-frequency speech echoes.'
+        },
+        {
+          id: 'b12',
+          type: 'materialsUsed',
+          finishIds: ['ply-birch']
+        },
+        {
+          id: 'b13',
+          type: 'cta',
+          label: 'Inquire About Office Partitions',
+          prefillNote: 'Hi! I would like to build similar open-plan curved millwork dividers using Sitka Flexi-Ply.'
+        }
+      ]
+    }
+  ];
+
   return {
     scenes: [defaultScene],
     categories: initialCategories,
@@ -168,6 +290,8 @@ const getDefaultDbData = (): VisualizerJSONDb => {
     hubConfigs: initialHubConfigs,
     faqs: initialFaqs,
     matrices: initialMatrices,
+    projects: initialProjects,
+    spaceTypes: initialSpaceTypes,
   };
 };
 
@@ -185,6 +309,8 @@ export function readVisualizerDb(): VisualizerJSONDb {
     if (!data.hubConfigs) data.hubConfigs = [];
     if (!data.faqs) data.faqs = [];
     if (!data.matrices) data.matrices = [];
+    if (!data.projects) data.projects = [];
+    if (!data.spaceTypes) data.spaceTypes = [];
     
     return data;
   } catch (err) {

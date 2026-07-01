@@ -1,122 +1,99 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Compass, Grid, ArrowRight } from 'lucide-react';
+import { Compass, Grid, ArrowRight, Video, List, Layers, Play } from 'lucide-react';
 import Reveal from '@/components/Reveal';
-
-type Project = {
-  title: string;
-  slug: string;
-  city: string;
-  spaceType: string; // 'Kitchen' | 'Office' | 'Hospitality' | 'Living'
-  materials: string;
-  verticals: string[]; // ['Veneer', 'Laminates', etc.]
-  desc: string;
-  imgUrl: string;
-};
+import { motion, AnimatePresence } from 'framer-motion';
+import { Project, Block } from '@/types/visualizer';
 
 export default function InspirationGallery() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [spaceTypes, setSpaceTypes] = useState<string[]>(['Kitchen', 'Office', 'Hospitality', 'Living']);
   const [selectedVertical, setSelectedVertical] = useState('All');
   const [selectedSpace, setSelectedSpace] = useState('All');
+  const [layoutMode, setLayoutMode] = useState<'grid' | 'masonry'>('grid');
+  const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const projects: Project[] = [
-    {
-      title: 'Amber House Residence',
-      slug: 'amber-house-residence',
-      city: 'Bangalore',
-      spaceType: 'Kitchen',
-      materials: 'Veneer · Laminates',
-      verticals: ['Veneer', 'Laminates'],
-      desc: 'A full-floor residential renovation using book-matched walnut veneer panelling against a matte laminate kitchen run.',
-      imgUrl: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      title: 'Northline Studio Office',
-      slug: 'northline-studio-office',
-      city: 'Mumbai',
-      spaceType: 'Office',
-      materials: 'Plywood · Decoratives',
-      verticals: ['Plywood', 'Decoratives'],
-      desc: 'An open-plan creative workspace built entirely on flexible plywood millwork partitions with matched edgebanding detail.',
-      imgUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      title: 'Cedar Point Hospitality',
-      slug: 'cedar-point-hospitality',
-      city: 'Goa',
-      spaceType: 'Hospitality',
-      materials: 'Laminates',
-      verticals: ['Laminates'],
-      desc: 'Heavy duty high-pressure compact laminate specified across 60 hotel rooms for a consistent, high-durability finish at scale.',
-      imgUrl: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      title: 'Harbor Lobby Panelling',
-      slug: 'harbor-lobby-panelling',
-      city: 'Kochi',
-      spaceType: 'Hospitality',
-      materials: 'Veneer',
-      verticals: ['Veneer'],
-      desc: 'Sequence-matched American Walnut veneer wraps a 40ft executive lobby wall without a single visible seam.',
-      imgUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      title: 'Veneer Wood Kitchen Fitout',
-      slug: 'veneer-wood-kitchen-fitout',
-      city: 'Hyderabad',
-      spaceType: 'Kitchen',
-      materials: 'Veneer · Plywood',
-      verticals: ['Veneer', 'Plywood'],
-      desc: 'BWP boiling water proof plywood substrate cores paired with sequence-matched raw walnut veneer faces, sealed on site.',
-      imgUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      title: 'Spacial Corporate Boardroom',
-      slug: 'spacial-corporate-boardroom',
-      city: 'Pune',
-      spaceType: 'Office',
-      materials: 'Decoratives · Veneer',
-      verticals: ['Decoratives', 'Veneer'],
-      desc: '3D ribbed slatted acoustic backdrops paired with a custom-built natural ash wood veneer boardroom table.',
-      imgUrl: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=800&q=80',
+  useEffect(() => {
+    async function fetchProjects() {
+      try {
+        const res = await fetch('/api/projects');
+        const data = await res.json();
+        if (data.success) {
+          setProjects(data.projects || []);
+          if (data.spaceTypes && data.spaceTypes.length > 0) {
+            setSpaceTypes(data.spaceTypes.map((t: any) => t.name));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load inspiration gallery:', err);
+      } finally {
+        setLoading(false);
+      }
     }
-  ];
+    fetchProjects();
+  }, []);
 
   const verticalFilters = ['All', 'Plywood', 'Laminates', 'Veneer', 'Decoratives'];
-  const spaceFilters = ['All', 'Kitchen', 'Office', 'Hospitality', 'Living'];
+  const spaceFilters = ['All', ...spaceTypes];
 
   // Filter projects list
-  const filteredProjects = projects.filter(p => {
-    const matchesVert = selectedVertical === 'All' || p.verticals.includes(selectedVertical);
-    const matchesSpace = selectedSpace === 'All' || p.spaceType === selectedSpace;
-    return matchesVert && matchesSpace;
+  const filteredProjects = projects.filter((p) => {
+    const matchesVert = selectedVertical === 'All' || p.verticals.some(v => v.toLowerCase() === selectedVertical.toLowerCase());
+    const matchesSpace = selectedSpace === 'All' || p.spaceTypes.some(s => s.toLowerCase() === selectedSpace.toLowerCase());
+    const isPublished = p.status === 'published';
+    return matchesVert && matchesSpace && isPublished;
   });
 
   return (
-    <div className="bg-ink min-h-screen py-24 md:py-32 px-6 md:px-12 max-w-7xl mx-auto space-y-12">
+    <div className="bg-ink min-h-screen py-24 md:py-32 px-6 md:px-12 max-w-7xl mx-auto space-y-12 select-none">
       
       {/* 1. Header Title */}
-      <div className="space-y-4 max-w-2xl">
-        <span className="text-xs font-mono tracking-widest text-brass uppercase block">
-          Lookbook Portfolio
-        </span>
-        <h1 className="text-3xl sm:text-5xl font-display font-medium text-parchment leading-tight">
-          Specified, fabricated, lived in.
-        </h1>
-        <p className="text-stone text-base leading-relaxed">
-          Explore real-world case studies detailing how architects, interior designers, and contracting builders have specified and structured Sitka Surface materials.
-        </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <div className="space-y-4 max-w-2xl">
+          <span className="text-xs font-mono tracking-widest text-brass uppercase block">
+            Lookbook Portfolio
+          </span>
+          <h1 className="text-3xl sm:text-5xl font-display font-medium text-parchment leading-tight">
+            Specified, fabricated, lived in.
+          </h1>
+          <p className="text-stone text-base leading-relaxed">
+            Explore real-world case studies detailing how architects, interior designers, and contracting builders have specified and structured Sitka Surface materials.
+          </p>
+        </div>
+
+        {/* Layout Toggle */}
+        <div className="flex gap-1.5 border border-line p-1 rounded-sm bg-ink-2">
+          <button
+            onClick={() => setLayoutMode('grid')}
+            className={`p-2 rounded-sm transition-colors cursor-pointer ${
+              layoutMode === 'grid' ? 'bg-ember text-parchment' : 'text-stone-dim hover:text-stone'
+            }`}
+            title="Grid View"
+          >
+            <Grid className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setLayoutMode('masonry')}
+            className={`p-2 rounded-sm transition-colors cursor-pointer ${
+              layoutMode === 'masonry' ? 'bg-ember text-parchment' : 'text-stone-dim hover:text-stone'
+            }`}
+            title="Masonry View"
+          >
+            <List className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* 2. Filters grid */}
       <div className="border-b border-line pb-8 space-y-5">
-        
         {/* Filter by Vertical */}
         <div className="flex flex-wrap items-center gap-4">
           <span className="text-[10px] font-mono tracking-wider uppercase text-stone-dim w-24">By Vertical:</span>
           <div className="flex gap-2 overflow-x-auto max-w-full custom-scrollbar pb-1">
-            {verticalFilters.map(vert => (
+            {verticalFilters.map((vert) => (
               <button
                 key={vert}
                 onClick={() => setSelectedVertical(vert)}
@@ -136,7 +113,7 @@ export default function InspirationGallery() {
         <div className="flex flex-wrap items-center gap-4">
           <span className="text-[10px] font-mono tracking-wider uppercase text-stone-dim w-24">By Space:</span>
           <div className="flex gap-2 overflow-x-auto max-w-full custom-scrollbar pb-1">
-            {spaceFilters.map(space => (
+            {spaceFilters.map((space) => (
               <button
                 key={space}
                 onClick={() => setSelectedSpace(space)}
@@ -151,52 +128,119 @@ export default function InspirationGallery() {
             ))}
           </div>
         </div>
-
       </div>
 
-      {/* 3. Lookbook Grid */}
-      <Reveal className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" delay={100}>
-        {filteredProjects.length > 0 ? (
-          filteredProjects.map((proj) => (
-            <div 
-              key={proj.slug}
-              className="group border border-line bg-ink-2 rounded-sm overflow-hidden flex flex-col justify-between hover:border-brass/35 transition-colors duration-300"
-            >
-              <div>
-                <div 
-                  className="h-[220px] bg-cover bg-center bg-zinc-800 transition-transform duration-500 group-hover:scale-[1.02]"
-                  style={{ backgroundImage: `url(${proj.imgUrl})` }}
-                />
-                <div className="p-6 md:p-8 space-y-4">
-                  <div className="flex justify-between items-center text-[10px] font-mono tracking-wider uppercase text-stone-dim border-b border-line/20 pb-2.5">
-                    <span>{proj.materials}</span>
-                    <span className="text-brass">{proj.spaceType}</span>
-                  </div>
-                  <h3 className="text-lg md:text-xl font-display font-medium text-parchment group-hover:text-ember-light transition-colors">
-                    {proj.title}
-                  </h3>
-                  <p className="text-stone-dim text-xs leading-relaxed">
-                    {proj.desc}
-                  </p>
-                </div>
-              </div>
+      {/* 3. Lookbook Grid / Masonry */}
+      {loading ? (
+        <div className="py-24 text-center text-stone-dim font-mono text-sm animate-pulse">
+          Loading inspiration portfolio...
+        </div>
+      ) : (
+        <motion.div 
+          layout
+          className={
+            layoutMode === 'grid'
+              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'
+              : 'columns-1 md:columns-2 lg:columns-3 gap-8 space-y-8'
+          }
+        >
+          <AnimatePresence mode="popLayout">
+            {filteredProjects.length > 0 ? (
+              filteredProjects.map((proj) => {
+                // Find hero block details
+                const heroBlock = proj.blocks.find((b) => b.type === 'hero');
+                const videoBlock = proj.blocks.find((b) => b.type === 'video');
+                
+                const title = heroBlock?.title || proj.name;
+                const location = heroBlock?.location || '';
+                const credit = heroBlock?.credit || '';
+                const heroImage = heroBlock?.imageUrl || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80';
+                
+                // Construct short summary from richText blocks
+                const richTexts = proj.blocks.filter((b) => b.type === 'richText');
+                const desc = richTexts[0]?.content 
+                  ? richTexts[0].content.replace(/[#*`_]/g, '').slice(0, 140) + '...'
+                  : 'Modern architecture and fabrication case study.';
 
-              <div className="px-6 md:px-8 pb-6 pt-2">
-                <Link 
-                  href={`/inspiration/${proj.slug}`}
-                  className="text-[10px] font-mono tracking-wider uppercase text-ember-light hover:text-ember transition-colors inline-flex items-center gap-1.5"
-                >
-                  View Case Study <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
+                const isHovered = hoveredSlug === proj.slug;
+                const hasVideo = !!videoBlock?.source;
+
+                return (
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.35, ease: 'easeInOut' }}
+                    key={proj.slug}
+                    className={`group border border-line bg-ink-2 rounded-sm overflow-hidden flex flex-col justify-between hover:border-brass/35 transition-colors duration-300 ${
+                      layoutMode === 'masonry' ? 'break-inside-avoid mb-8 inline-block w-full' : ''
+                    }`}
+                    onMouseEnter={() => setHoveredSlug(proj.slug)}
+                    onMouseLeave={() => setHoveredSlug(null)}
+                  >
+                    <div>
+                      <div className="relative h-[240px] bg-zinc-900 overflow-hidden border-b border-line/45">
+                        {isHovered && hasVideo ? (
+                          <video
+                            src={videoBlock?.source}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div 
+                            className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-[1.03]"
+                            style={{ backgroundImage: `url(${heroImage})` }}
+                          />
+                        )}
+                        {hasVideo && (
+                          <span className="absolute bottom-3 right-3 bg-ink/75 border border-line/45 p-1.5 rounded-full z-10 text-brass hover:text-parchment" title="Video preview available">
+                            <Video className="w-3.5 h-3.5" />
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="p-6 space-y-4">
+                        <div className="flex justify-between items-center text-[10px] font-mono tracking-wider uppercase text-stone-dim border-b border-line/20 pb-2.5">
+                          <span>{proj.verticals.join(' · ')}</span>
+                          <span className="text-brass">{proj.spaceTypes.join(' · ')}</span>
+                        </div>
+                        <h3 className="text-lg font-display font-medium text-parchment group-hover:text-ember-light transition-colors">
+                          {title}
+                        </h3>
+                        <p className="text-stone-dim text-xs leading-relaxed font-sans normal-case">
+                          {desc}
+                        </p>
+                        {location && (
+                          <div className="text-[9px] font-mono text-stone/60">
+                            Location: {location} {credit && `| Design: ${credit}`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="px-6 pb-6 pt-2">
+                      <Link 
+                        href={`/inspiration/${proj.slug}`}
+                        className="text-[10px] font-mono tracking-wider uppercase text-ember-light hover:text-ember transition-colors inline-flex items-center gap-1.5"
+                      >
+                        View Case Study <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </motion.div>
+                );
+              })
+            ) : (
+              <div className="col-span-full border border-dashed border-line p-16 text-center text-stone-dim text-sm w-full">
+                No projects found matching the selected filters.
               </div>
-            </div>
-          ))
-        ) : (
-          <div className="col-span-full border border-dashed border-line p-16 text-center text-stone-dim text-sm">
-            No projects found matching the selected filters.
-          </div>
-        )}
-      </Reveal>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      )}
 
     </div>
   );

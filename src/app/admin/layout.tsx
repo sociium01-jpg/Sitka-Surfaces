@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, Layers, BookOpen, MessageSquare, FileText, Image, Users, LogOut, ChevronRight, Menu as MenuIcon, Layout, Eye } from 'lucide-react';
+import { LayoutDashboard, Layers, BookOpen, MessageSquare, FileText, Image, Users, LogOut, ChevronRight, Menu as MenuIcon, Layout, Eye, Compass } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -67,6 +67,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Products Catalog', href: '/admin/products', icon: Layers },
     { name: 'Blog Journal', href: '/admin/blog', icon: BookOpen },
+    { name: 'Inspiration Lookbook', href: '/admin/inspiration', icon: Compass },
     { name: 'Testimonials', href: '/admin/testimonials', icon: MessageSquare },
     { name: 'Page Copy Editor', href: '/admin/content', icon: FileText },
     { name: 'Hero Media', href: '/admin/media', icon: Image },

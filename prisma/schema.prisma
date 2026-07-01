@@ -201,3 +201,18 @@ model ComparisonMatrix {
   updatedAt           DateTime @updatedAt
 }
 
+model Project {
+  id                 String   @id @default(uuid())
+  name               String
+  slug               String   @unique
+  status             String   @default("draft") // "draft" | "published"
+  verticals          String   // JSON array of category names
+  spaceTypes         String   // JSON array of space type tags
+  featuredOnHomepage Boolean  @default(false)
+  homepageOrder      Int?     @default(0)
+  blocks             String   // JSON array string of blocks
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+

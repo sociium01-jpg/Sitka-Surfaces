@@ -39,6 +39,7 @@ export default function Home() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [media, setMedia] = useState({ mediaType: 'image', mediaUrl: '' });
+  const [homepageProjects, setHomepageProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -64,6 +65,14 @@ export default function Home() {
         const mediaData = await mediaRes.json();
         if (mediaData.success && mediaData.media.home) {
           setMedia(mediaData.media.home);
+        }
+
+        // Fetch projects
+        const projRes = await fetch('/api/projects');
+        const projData = await projRes.json();
+        if (projData.success) {
+          const featured = (projData.projects || []).filter((p: any) => p.featuredOnHomepage && p.status === 'published');
+          setHomepageProjects(featured);
         }
       } catch (err) {
         console.error('Failed to load home page data:', err);
@@ -317,29 +326,78 @@ export default function Home() {
             className="flex gap-6 overflow-x-auto pb-6 scroll-snap-type-x custom-scrollbar snap-x snap-mandatory"
             delay={100}
           >
-            {projectCards.map((proj) => (
-              <div 
-                key={proj.title}
-                className="min-w-[290px] sm:min-w-[340px] md:min-w-[400px] bg-ink-2 border border-line rounded-sm overflow-hidden flex-shrink-0 snap-start group"
-              >
-                <div 
-                  className="h-[200px] md:h-[240px] bg-cover bg-center bg-zinc-800 transition-all duration-700 group-hover:scale-[1.03]"
-                  style={{ backgroundImage: `url(${proj.imgUrl})` }}
-                />
-                <div className="p-6 md:p-8 space-y-4">
-                  <div className="flex justify-between items-center text-[10px] font-mono tracking-wider uppercase text-stone-dim">
-                    <span>{proj.materials}</span>
-                    <span className="text-brass font-sans normal-case">{proj.city}</span>
+            {homepageProjects.length > 0 ? (
+              homepageProjects.map((proj) => {
+                const heroBlock = proj.blocks?.find((b: any) => b.type === 'hero');
+                const title = heroBlock?.title || proj.name;
+                const location = heroBlock?.location || '';
+                const heroImage = heroBlock?.imageUrl || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=600&q=80';
+                
+                const richTexts = proj.blocks?.filter((b: any) => b.type === 'richText') || [];
+                const desc = richTexts[0]?.content
+                  ? richTexts[0].content.replace(/[#*`_]/g, '').slice(0, 140) + '...'
+                  : 'Case study details and materials specifications.';
+
+                return (
+                  <div 
+                    key={proj.slug}
+                    className="min-w-[290px] sm:min-w-[340px] md:min-w-[400px] bg-ink-2 border border-line rounded-sm overflow-hidden flex-shrink-0 snap-start group flex flex-col justify-between"
+                  >
+                    <div>
+                      <div 
+                        className="h-[200px] md:h-[240px] bg-cover bg-center bg-zinc-800 transition-all duration-700 group-hover:scale-[1.03]"
+                        style={{ backgroundImage: `url(${heroImage})` }}
+                      />
+                      <div className="p-6 md:p-8 space-y-4">
+                        <div className="flex justify-between items-center text-[10px] font-mono tracking-wider uppercase text-stone-dim">
+                          <span>{proj.verticals?.join(' · ') || 'Materials'}</span>
+                          <span className="text-brass font-sans normal-case">{location}</span>
+                        </div>
+                        <h3 className="text-lg md:text-xl font-display font-medium text-parchment group-hover:text-ember-light transition-colors">
+                          {title}
+                        </h3>
+                        <p className="text-xs md:text-sm text-stone-dim leading-relaxed">
+                          {desc}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="px-6 md:px-8 pb-6 pt-2">
+                      <Link 
+                        href={`/inspiration/${proj.slug}`}
+                        className="text-[10px] font-mono tracking-wider uppercase text-ember-light hover:text-ember transition-colors inline-flex items-center gap-1.5"
+                      >
+                        View Case Study <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
                   </div>
-                  <h3 className="text-lg md:text-xl font-display font-medium text-parchment group-hover:text-ember-light transition-colors">
-                    {proj.title}
-                  </h3>
-                  <p className="text-xs md:text-sm text-stone-dim leading-relaxed">
-                    {proj.desc}
-                  </p>
+                );
+              })
+            ) : (
+              projectCards.map((proj) => (
+                <div 
+                  key={proj.title}
+                  className="min-w-[290px] sm:min-w-[340px] md:min-w-[400px] bg-ink-2 border border-line rounded-sm overflow-hidden flex-shrink-0 snap-start group"
+                >
+                  <div 
+                    className="h-[200px] md:h-[240px] bg-cover bg-center bg-zinc-800 transition-all duration-700 group-hover:scale-[1.03]"
+                    style={{ backgroundImage: `url(${proj.imgUrl})` }}
+                  />
+                  <div className="p-6 md:p-8 space-y-4">
+                    <div className="flex justify-between items-center text-[10px] font-mono tracking-wider uppercase text-stone-dim">
+                      <span>{proj.materials}</span>
+                      <span className="text-brass font-sans normal-case">{proj.city}</span>
+                    </div>
+                    <h3 className="text-lg md:text-xl font-display font-medium text-parchment group-hover:text-ember-light transition-colors">
+                      {proj.title}
+                    </h3>
+                    <p className="text-xs md:text-sm text-stone-dim leading-relaxed">
+                      {proj.desc}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </Reveal>
         </div>
       </section>
