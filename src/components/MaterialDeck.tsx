@@ -53,10 +53,16 @@ export default function MaterialDeck() {
 
   return (
     <div className="space-y-6">
-      {/* Deck Row */}
-      <div className="flex flex-col lg:flex-row gap-4 lg:gap-0 lg:h-[480px] w-full relative">
+      {/* Deck Row with 3D Perspective environment */}
+      <div 
+        className="flex flex-col lg:flex-row gap-4 lg:gap-2 lg:h-[490px] w-full relative pb-6"
+        style={{ perspective: '1600px', transformStyle: 'preserve-3d' }}
+      >
         {cards.map((card, index) => {
           const isActive = activeIndex === index;
+          const offset = index - activeIndex;
+          const rotY = offset * -14; // Fan out cards based on relative active index
+          
           return (
             <div
               key={card.num}
@@ -66,11 +72,21 @@ export default function MaterialDeck() {
                   setActiveIndex(index);
                 }
               }}
-              className={`relative flex flex-col justify-end p-6 md:p-8 border border-line rounded-sm overflow-hidden cursor-pointer bg-ink-2 transition-all duration-500 ease-custom min-h-[140px] lg:min-h-0 ${
+              className={`relative flex flex-col justify-end p-6 md:p-8 border border-line rounded-sm overflow-hidden cursor-pointer bg-ink-2 transition-all duration-500 ease-custom min-h-[150px] lg:min-h-0 ${
                 isActive 
-                  ? 'lg:flex-[2.6]' 
+                  ? 'lg:flex-[2.8]' 
                   : 'lg:flex-1'
               }`}
+              style={{
+                transform: isActive 
+                  ? 'rotateY(0deg) rotateX(0deg) translateZ(45px) scale(1.02)' 
+                  : `rotateY(${rotY}deg) rotateX(3deg) translateZ(-30px) scale(0.96)`,
+                zIndex: isActive ? 25 : 10 - Math.abs(offset),
+                boxShadow: isActive 
+                  ? '0 35px 70px rgba(0, 0, 0, 0.75), 0 0 35px rgba(245, 184, 0, 0.14)' 
+                  : '0 12px 28px rgba(0, 0, 0, 0.35)',
+                transformStyle: 'preserve-3d',
+              }}
             >
               {/* Card Background Texture */}
               <div 
