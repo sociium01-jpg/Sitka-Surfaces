@@ -54,7 +54,7 @@ export default function RootLayout({
         <ThemeProvider>
           <ModalProvider>
             <Nav />
-            <main className="flex-grow">
+            <main className="flex-grow pb-24 min-[901px]:pb-0">
               {children}
             </main>
             <Footer />
