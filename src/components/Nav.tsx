@@ -3,12 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronDown, Menu, X, ArrowRight } from 'lucide-react';
+import { ChevronDown, Menu, X, ArrowRight, Sun, Moon } from 'lucide-react';
 import { useModal } from '@/context/ModalContext';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function Nav() {
   const pathname = usePathname();
   const { openBrochure } = useModal();
+  const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -42,6 +44,11 @@ export default function Nav() {
   ];
 
   const isDarkBg = pathname === '/' || pathname.startsWith('/surfaces/') || pathname === '/about';
+  const isDarkFamily = theme === 'dark' || theme === 'modern' || theme === 'onyx';
+
+  const togglePrimaryTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  };
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-100 flex items-center justify-between px-6 md:px-12 py-5 transition-all duration-500 ${
@@ -50,22 +57,29 @@ export default function Nav() {
         : isDarkBg ? 'bg-gradient-to-b from-[#15120F]/90 to-transparent' : 'bg-parchment/90 border-b border-line/20 backdrop-blur-md py-4'
     }`}>
       {/* Logo */}
-      <Link href="/" className="font-display font-bold text-lg md:text-xl tracking-wider select-none text-parchment">
+      <Link 
+        href="/" 
+        className={`font-display font-bold text-lg md:text-xl tracking-wider select-none transition-colors duration-500 ${
+          isDarkFamily ? 'text-white opacity-100' : 'text-parchment'
+        }`}
+      >
         SITKA <span className="text-ember-light">SURFACES</span>
       </Link>
 
       {/* Desktop Links */}
-      <nav className="hidden md:flex items-center gap-8 text-xs font-mono tracking-wider uppercase">
+      <nav className="hidden min-[901px]:flex items-center gap-8 text-xs font-mono tracking-wider uppercase">
         {/* Surfaces Dropdown */}
         <div 
           className="relative"
           onMouseEnter={() => setDropdownOpen(true)}
           onMouseLeave={() => setDropdownOpen(false)}
         >
-          <button className={`flex items-center gap-1.5 transition-colors cursor-pointer pb-2 pt-2 ${
+          <button className={`flex items-center gap-1.5 transition-all cursor-pointer pb-2 pt-2 ${
             pathname.startsWith('/surfaces/') 
               ? 'text-ember-light font-medium' 
-              : 'text-stone hover:text-parchment'
+              : isDarkFamily 
+                ? 'text-white opacity-100' 
+                : 'text-stone hover:text-parchment'
           }`}>
             Surfaces <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
           </button>
@@ -110,8 +124,12 @@ export default function Nav() {
             <Link 
               key={link.name} 
               href={link.href}
-              className={`transition-colors cursor-pointer relative pb-2 pt-2 ${
-                isActive ? 'text-ember-light font-medium' : 'text-stone hover:text-parchment'
+              className={`transition-all cursor-pointer relative pb-2 pt-2 ${
+                isActive 
+                  ? 'text-ember-light font-medium' 
+                  : isDarkFamily 
+                    ? 'text-white opacity-100' 
+                    : 'text-stone hover:text-parchment'
               }`}
             >
               {link.name}
@@ -123,8 +141,17 @@ export default function Nav() {
         })}
       </nav>
 
-      {/* Action Button */}
-      <div className="hidden md:block">
+      {/* Action Button & Theme Pill */}
+      <div className="hidden min-[901px]:flex items-center gap-4">
+        {/* Sun/Moon toggle pill */}
+        <button
+          onClick={togglePrimaryTheme}
+          className="p-2 border border-line bg-ink-2/80 hover:bg-ink text-stone hover:text-parchment transition-all duration-300 rounded-sm cursor-pointer flex items-center justify-center"
+          aria-label="Toggle Theme"
+        >
+          {theme === 'light' ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
+        </button>
+
         <button 
           onClick={() => openBrochure('All')}
           className="border border-brass hover:border-ember hover:bg-ember text-parchment text-[10px] font-mono tracking-widest uppercase py-2 px-5 rounded-sm transition-all duration-300 cursor-pointer"
@@ -133,17 +160,27 @@ export default function Nav() {
         </button>
       </div>
 
-      {/* Mobile Nav Trigger */}
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className="md:hidden text-stone hover:text-parchment p-1 transition-colors z-110"
-        aria-label="Toggle menu"
-      >
-        {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
+      {/* Mobile Nav Trigger & Theme Toggle */}
+      <div className="flex items-center gap-3 min-[901px]:hidden">
+        <button
+          onClick={togglePrimaryTheme}
+          className="p-1.5 border border-line bg-ink-2/80 text-stone rounded-sm cursor-pointer"
+          aria-label="Toggle Theme"
+        >
+          {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+        </button>
+
+        <button 
+          onClick={() => setIsOpen(!isOpen)}
+          className="text-stone hover:text-parchment p-1 transition-colors z-110"
+          aria-label="Toggle menu"
+        >
+          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </div>
 
       {/* Mobile Sidebar overlay */}
-      <div className={`fixed inset-0 bg-[#0a0806]/95 z-105 flex flex-col justify-center px-8 space-y-8 md:hidden transition-all duration-500 transform ${
+      <div className={`fixed inset-0 bg-ink/95 z-105 flex flex-col justify-center px-8 space-y-8 min-[901px]:hidden transition-all duration-500 transform ${
         isOpen ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'
       }`}>
         <span className="text-[10px] font-mono tracking-widest text-brass uppercase">

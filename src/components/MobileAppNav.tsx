@@ -18,7 +18,7 @@ export default function MobileAppNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-150 md:hidden bg-ink/95 border-t border-line/80 backdrop-blur-md px-2 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex justify-around shadow-2xl">
+    <nav className="fixed bottom-0 left-0 right-0 z-150 min-[901px]:hidden bg-ink/95 border-t border-line/80 backdrop-blur-md px-2 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex justify-around shadow-2xl">
       {appLinks.map((link) => {
         const Icon = link.icon;
         const isActive = link.matchPattern 

@@ -1,18 +1,96 @@
 @import "tailwindcss";
 
-:root {
+:root,
+html[data-theme="dark"] {
   --ink: #15120F;
   --ink-2: #1E1A15;
   --parchment: #EDE6D8;
-  --ember: #f9ac20;
-  --ember-light: #ffc24d;
-  --brass: #A68A56;
+  --ember: #F5B800;
+  --ember-light: #FFD23F;
+  --ember-text: #1A1409;
+  --brass: #D4A017;
   --stone: #C9C2B4;
   --stone-dim: #8B8478;
   --charcoal: #2A2521;
   --line: rgba(201, 194, 180, 0.16);
+  --glow: rgba(245, 184, 0, 0.16);
   --radius: 2px;
   --ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+html[data-theme="light"] {
+  --ink: #F7F2E7;
+  --ink-2: #FFFFFF;
+  --parchment: #211C16;
+  --ember: #F5B800;
+  --ember-light: #FFD23F;
+  --ember-text: #1A1409;
+  --brass: #9C7300;
+  --stone: #4A4238;
+  --stone-dim: #82786A;
+  --charcoal: #E5DDD0;
+  --line: rgba(33, 28, 22, 0.12);
+  --glow: rgba(245, 184, 0, 0.12);
+}
+
+html[data-theme="minimal"] {
+  --ink: #FFFFFF;
+  --ink-2: #FAFAFA;
+  --parchment: #111111;
+  --ember: #F5B800;
+  --ember-light: #FFD23F;
+  --ember-text: #1A1409;
+  --brass: #777777;
+  --stone: #333333;
+  --stone-dim: #999999;
+  --charcoal: #EAEAEA;
+  --line: rgba(0, 0, 0, 0.08);
+  --glow: rgba(245, 184, 0, 0.08);
+}
+
+html[data-theme="modern"] {
+  --ink: #0F172A;
+  --ink-2: #1E293B;
+  --parchment: #F8FAFC;
+  --ember: #F5B800;
+  --ember-light: #FFD23F;
+  --ember-text: #1A1409;
+  --brass: #94A3B8;
+  --stone: #CBD5E1;
+  --stone-dim: #64748B;
+  --charcoal: #334155;
+  --line: rgba(148, 163, 184, 0.16);
+  --glow: rgba(245, 184, 0, 0.16);
+}
+
+html[data-theme="studio"] {
+  --ink: #F4EBE1;
+  --ink-2: #EADFD3;
+  --parchment: #2C2621;
+  --ember: #F5B800;
+  --ember-light: #FFD23F;
+  --ember-text: #1A1409;
+  --brass: #8C7561;
+  --stone: #5C5046;
+  --stone-dim: #8E8074;
+  --charcoal: #DFD3C4;
+  --line: rgba(92, 80, 70, 0.15);
+  --glow: rgba(245, 184, 0, 0.10);
+}
+
+html[data-theme="onyx"] {
+  --ink: #090909;
+  --ink-2: #121212;
+  --parchment: #ECECEC;
+  --ember: #F5B800;
+  --ember-light: #FFD23F;
+  --ember-text: #1A1409;
+  --brass: #8A8A8A;
+  --stone: #CCCCCC;
+  --stone-dim: #666666;
+  --charcoal: #1C1C1C;
+  --line: rgba(255, 255, 255, 0.08);
+  --glow: rgba(245, 184, 0, 0.20);
 }
 
 @theme {
@@ -21,11 +99,13 @@
   --color-parchment: var(--parchment);
   --color-ember: var(--ember);
   --color-ember-light: var(--ember-light);
+  --color-ember-text: var(--ember-text);
   --color-brass: var(--brass);
   --color-stone: var(--stone);
   --color-stone-dim: var(--stone-dim);
   --color-charcoal: var(--charcoal);
   --color-line: var(--line);
+  --color-glow: var(--glow);
 
   --font-sans: var(--font-inter), sans-serif;
   --font-display: var(--font-space-grotesk), sans-serif;
@@ -38,6 +118,24 @@
 html {
   scroll-behavior: smooth;
   background-color: var(--ink);
+}
+
+body, 
+section, 
+div:not(.r3f-canvas), 
+header, 
+footer,
+nav,
+a,
+span,
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  transition: background-color 0.5s var(--ease), border-color 0.5s var(--ease), color 0.5s var(--ease), box-shadow 0.5s var(--ease);
 }
 
 body {

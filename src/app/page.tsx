@@ -9,6 +9,11 @@ import MaterialDeck from '@/components/MaterialDeck';
 import TestimonialsMarquee from '@/components/TestimonialsMarquee';
 import Counter from '@/components/Counter';
 import LaminateToWoodButton from '@/components/LaminateToWoodButton';
+import dynamic from 'next/dynamic';
+
+const ThreeHero = dynamic(() => import('@/components/ThreeHero'), { ssr: false });
+const ThreeInspector = dynamic(() => import('@/components/ThreeInspector'), { ssr: false });
+const Visualizer = dynamic(() => import('@/components/Visualizer'), { ssr: false });
 
 type PageContentMap = Record<string, string>;
 
@@ -123,32 +128,8 @@ export default function Home() {
     <div className="w-full">
       {/* 1. HERO SECTION */}
       <section className="relative min-h-screen flex flex-col justify-center py-32 md:py-40 overflow-hidden bg-ink">
-        {/* Background Visual Media (Admin editable) */}
-        {media.mediaUrl ? (
-          <div className="absolute inset-0 z-0">
-            {media.mediaType === 'video' ? (
-              <video 
-                autoPlay 
-                loop 
-                muted 
-                playsInline
-                className="w-full h-full object-cover opacity-20 filter saturate-50"
-              >
-                <source src={media.mediaUrl} type="video/mp4" />
-              </video>
-            ) : (
-              <img 
-                src={media.mediaUrl} 
-                alt="Sitka Surfaces Hero" 
-                className="w-full h-full object-cover opacity-25 filter saturate-50"
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/60 to-[#15120F]/90" />
-          </div>
-        ) : (
-          /* Fallback Gradient Background Grid */
-          <div className="absolute inset-0 z-0 opacity-40 bg-[radial-gradient(ellipse_80%_60%_at_70%_20%,rgba(185,80,42,0.18),transparent_60%)] bg-[repeating-linear-gradient(100deg,rgba(201,194,180,0.02)_0px,rgba(201,194,180,0.02)_1px,transparent_1px,transparent_60px)]" />
-        )}
+        <ThreeHero />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-ink/75 pointer-events-none z-1" />
 
         <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10 w-full space-y-6">
           <span className="text-xs font-mono tracking-widest text-brass uppercase block animate-fade-in-down">
@@ -238,6 +219,38 @@ export default function Home() {
           </Reveal>
           <Reveal delay={100}>
             <MaterialDeck />
+          </Reveal>
+        </div>
+      </section>
+
+      {/* 3.1. INSPECT IN 3D SECTION */}
+      <section className="bg-ink border-t border-line/60 py-24 md:py-32" id="inspector">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 space-y-16">
+          <Reveal className="max-w-xl space-y-3">
+            <span className="text-[10px] font-mono tracking-widest text-brass uppercase">3D Spec Viewer</span>
+            <h2 className="text-3xl md:text-5xl font-display font-medium text-parchment">Inspect Core &amp; Grain Structure</h2>
+            <p className="text-stone-dim text-sm leading-relaxed">
+              Examine veneer ply layering or solid surface finishes. Drag to inspect the physical core structure under high detail.
+            </p>
+          </Reveal>
+          <Reveal delay={100}>
+            <ThreeInspector />
+          </Reveal>
+        </div>
+      </section>
+
+      {/* 3.2. INTERACTIVE ROOM VISUALIZER */}
+      <section className="bg-ink border-t border-line/60 py-24 md:py-32" id="visualizer">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 space-y-16">
+          <Reveal className="max-w-xl space-y-3">
+            <span className="text-[10px] font-mono tracking-widest text-brass uppercase">Material Visualizer</span>
+            <h2 className="text-3xl md:text-5xl font-display font-medium text-parchment">Interactive Interior Visualizer</h2>
+            <p className="text-stone-dim text-sm leading-relaxed">
+              Apply various plywood cores, high-pressure laminates, and woodgrain veneers directly to the cabinet, flooring, countertop, or feature wall.
+            </p>
+          </Reveal>
+          <Reveal delay={100}>
+            <Visualizer />
           </Reveal>
         </div>
       </section>
