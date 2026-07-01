@@ -56,6 +56,19 @@ export default function JournalArticle({ params }: { params: Promise<{ slug: str
 
   if (!post) return null;
 
+  const getSlugImage = (s: string) => {
+    switch (s) {
+      case 'plywood-laminate-or-veneer-how-to-actually-choose':
+        return 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80';
+      case 'what-fsc-certification-actually-means-for-your-project':
+        return 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80';
+      case 'designing-with-grain-a-short-guide-to-veneer-matching':
+        return 'https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=800&q=80';
+      default:
+        return 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80';
+    }
+  };
+
   const dateStr = new Date(post.publishedAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -118,6 +131,15 @@ export default function JournalArticle({ params }: { params: Promise<{ slug: str
         >
           <ArrowLeft className="w-4 h-4" /> Back to Journal
         </Link>
+
+        {/* Article Image Banner */}
+        <Reveal className="w-full aspect-[21/9] border border-line overflow-hidden rounded-sm relative z-0">
+          <img 
+            src={getSlugImage(post.slug)} 
+            alt={post.title} 
+            className="w-full h-full object-cover filter brightness-[0.85] saturate-[0.85]"
+          />
+        </Reveal>
 
         {/* Article Meta */}
         <Reveal className="space-y-4 pt-4 border-t border-line/45">

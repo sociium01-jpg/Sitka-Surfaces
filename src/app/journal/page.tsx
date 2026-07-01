@@ -48,6 +48,19 @@ export default function JournalListing() {
     return matchesCategory && matchesSearch;
   });
 
+  const getSlugImage = (s: string) => {
+    switch (s) {
+      case 'plywood-laminate-or-veneer-how-to-actually-choose':
+        return 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80';
+      case 'what-fsc-certification-actually-means-for-your-project':
+        return 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80';
+      case 'designing-with-grain-a-short-guide-to-veneer-matching':
+        return 'https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=800&q=80';
+      default:
+        return 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80';
+    }
+  };
+
   return (
     <div className="bg-ink min-h-screen py-24 md:py-32 px-6 md:px-12 max-w-7xl mx-auto space-y-12">
       
@@ -116,21 +129,32 @@ export default function JournalListing() {
               return (
                 <article 
                   key={post.id}
-                  className="border border-line bg-ink-2 p-6 md:p-8 rounded-sm hover:border-brass/35 transition-all duration-300 flex flex-col justify-between group"
+                  className="border border-line bg-ink-2 p-0 rounded-sm hover:border-brass/35 transition-all duration-300 flex flex-col justify-between group overflow-hidden"
                 >
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center text-[9px] font-mono tracking-widest text-brass uppercase">
-                      <span>{post.category}</span>
+                  <div>
+                    {/* Thumbnail Image */}
+                    <div className="w-full h-48 overflow-hidden relative border-b border-line">
+                      <img 
+                        src={getSlugImage(post.slug)} 
+                        alt={post.title} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-90"
+                      />
+                      <span className="absolute top-3 left-3 text-[8px] font-mono tracking-widest bg-ink-2 border border-line text-brass px-2 py-1 uppercase rounded-sm z-1">
+                        {post.category}
+                      </span>
                     </div>
-                    <h2 className="text-base md:text-lg font-display font-medium text-parchment group-hover:text-ember-light transition-colors leading-snug">
-                      <Link href={`/journal/${post.slug}`}>{post.title}</Link>
-                    </h2>
-                    <p className="text-xs text-stone-dim leading-relaxed font-sans normal-case">
-                      {post.summary}
-                    </p>
+
+                    <div className="p-6 md:p-8 space-y-4">
+                      <h2 className="text-base md:text-lg font-display font-medium text-parchment group-hover:text-ember-light transition-colors leading-snug">
+                        <Link href={`/journal/${post.slug}`}>{post.title}</Link>
+                      </h2>
+                      <p className="text-xs text-stone-dim leading-relaxed font-sans normal-case">
+                        {post.summary}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="mt-8 pt-4 border-t border-line/30 flex flex-col sm:flex-row justify-between gap-3 text-[10px] font-mono text-stone-dim">
+                  <div className="p-6 md:p-8 pt-0 border-t border-line/30 flex flex-col sm:flex-row justify-between gap-3 text-[10px] font-mono text-stone-dim">
                     <div className="flex gap-4">
                       <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {dateStr}</span>
                       <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" /> {post.author}</span>
