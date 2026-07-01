@@ -7,6 +7,8 @@ import { useModal } from '@/context/ModalContext';
 import Reveal from '@/components/Reveal';
 import MaterialDeck from '@/components/MaterialDeck';
 import TestimonialsMarquee from '@/components/TestimonialsMarquee';
+import Counter from '@/components/Counter';
+import LaminateToWoodButton from '@/components/LaminateToWoodButton';
 
 type PageContentMap = Record<string, string>;
 
@@ -80,6 +82,11 @@ export default function Home() {
     stats_projects: content['stats_projects'] || '2400+',
     stats_cities: content['stats_cities'] || '40',
   };
+
+  const yearsVal = parseInt(c.stats_years.replace(/[^0-9]/g, '')) || 18;
+  const finishesVal = parseInt(c.stats_finishes.replace(/[^0-9]/g, '')) || 300;
+  const projectsVal = parseInt(c.stats_projects.replace(/[^0-9]/g, '')) || 2400;
+  const citiesVal = parseInt(c.stats_cities.replace(/[^0-9]/g, '')) || 40;
 
   const projectCards = [
     {
@@ -192,19 +199,27 @@ export default function Home() {
           
           <Reveal className="lg:col-span-5 grid grid-cols-2 gap-8 md:gap-12" delay={150}>
             <div className="space-y-1">
-              <div className="text-3xl md:text-5xl font-display font-medium text-ember-light">{c.stats_years}</div>
+              <div className="text-3xl md:text-5xl font-display font-medium text-ember-light">
+                <Counter target={yearsVal} suffix="+" />
+              </div>
               <p className="text-[10px] md:text-xs text-stone-dim font-mono uppercase tracking-wider">Years engineering surfaces</p>
             </div>
             <div className="space-y-1">
-              <div className="text-3xl md:text-5xl font-display font-medium text-ember-light">{c.stats_finishes}</div>
+              <div className="text-3xl md:text-5xl font-display font-medium text-ember-light">
+                <Counter target={finishesVal} suffix="+" />
+              </div>
               <p className="text-[10px] md:text-xs text-stone-dim font-mono uppercase tracking-wider">Finishes &amp; species</p>
             </div>
             <div className="space-y-1">
-              <div className="text-3xl md:text-5xl font-display font-medium text-ember-light">{c.stats_projects}</div>
+              <div className="text-3xl md:text-5xl font-display font-medium text-ember-light">
+                <Counter target={projectsVal} suffix="+" />
+              </div>
               <p className="text-[10px] md:text-xs text-stone-dim font-mono uppercase tracking-wider">Projects specified</p>
             </div>
             <div className="space-y-1">
-              <div className="text-3xl md:text-5xl font-display font-medium text-ember-light">{c.stats_cities}</div>
+              <div className="text-3xl md:text-5xl font-display font-medium text-ember-light">
+                <Counter target={citiesVal} suffix="" />
+              </div>
               <p className="text-[10px] md:text-xs text-stone-dim font-mono uppercase tracking-wider">Cities served</p>
             </div>
           </Reveal>
@@ -414,12 +429,11 @@ export default function Home() {
           </Reveal>
           
           <Reveal className="pt-4" delay={100}>
-            <button 
+            <LaminateToWoodButton 
               onClick={() => openBrochure('All')}
-              className="bg-ember hover:bg-ember-light text-parchment text-xs font-mono tracking-wider uppercase py-4 px-10 rounded-sm transition-all duration-300 shadow-xl cursor-pointer"
-            >
-              Download the Brochure
-            </button>
+              label="Download the Brochure"
+              loadingLabel="Preparing PDF..."
+            />
           </Reveal>
         </div>
       </section>
