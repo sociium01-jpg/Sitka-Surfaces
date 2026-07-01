@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #15120F;
+  --ink-2: #1E1A15;
+  --parchment: #EDE6D8;
+  --ember: #B5502A;
+  --ember-light: #D3714B;
+  --brass: #A68A56;
+  --stone: #C9C2B4;
+  --stone-dim: #8B8478;
+  --charcoal: #2A2521;
+  --line: rgba(201, 194, 180, 0.16);
+  --radius: 2px;
+  --ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+@theme {
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-parchment: var(--parchment);
+  --color-ember: var(--ember);
+  --color-ember-light: var(--ember-light);
+  --color-brass: var(--brass);
+  --color-stone: var(--stone);
+  --color-stone-dim: var(--stone-dim);
+  --color-charcoal: var(--charcoal);
+  --color-line: var(--line);
+
+  --font-sans: var(--font-inter), sans-serif;
+  --font-display: var(--font-space-grotesk), sans-serif;
+  --font-serif: var(--font-fraunces), serif;
+  --font-mono: var(--font-ibm-plex-mono), monospace;
+  
+  --ease-custom: var(--ease);
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: var(--ink);
+}
+
+body {
+  background-color: var(--ink);
+  color: var(--stone);
+  font-family: var(--font-inter), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Custom Selection Colors */
+::selection {
+  background-color: var(--ember);
+  color: var(--parchment);
+}
+
+/* Scroll reveal helper classes */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+}
+
+.reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Custom Scrollbar Styles */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 4px;
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: var(--radius);
+}
+
+/* Testimonials Marquee Animation */
+@keyframes scrollMarquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: scrollMarquee 38s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Custom Focus Ring Styles using ember accent */
+.custom-focus:focus-visible {
+  outline: 2px solid var(--ember);
+  outline-offset: 1px;
+}

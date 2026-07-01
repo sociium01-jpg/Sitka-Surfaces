@@ -1,0 +1,88 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String   // Encrypted password
+  role      String   // "ADMIN", "EDITOR", "VIEWER"
+  createdAt DateTime @default(now())
+}
+
+model Lead {
+  id           String   @id @default(uuid())
+  name         String
+  email        String
+  phone        String
+  company      String?
+  interestArea String   // "ALL", "PLYWOOD", "LAMINATES", "VENEER", "DECORATIVES"
+  persona      String   // "ARCHITECT", "DESIGNER", "CONTRACTOR", "DEALER", "HOMEOWNER", "OTHER"
+  createdAt    DateTime @default(now())
+  utmSource    String?
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  vertical    String   // "PLYWOOD", "LAMINATES", "VENEER", "DECORATIVES"
+  category    String   // e.g., "MR Grade", "High Gloss", "Natural Wood"
+  description String
+  specs       String   // JSON string representing technical specs
+  swatches    String   // JSON string representing swatches (name, color/image, etc.)
+  applications String  // Comma-separated list or JSON array of applications
+  tags        String?  // Comma-separated list or JSON array of tags
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model Post {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String   @unique
+  category    String   // "Material Guides", "Sustainability", "Design Trends", etc.
+  summary     String
+  content     String   // Markdown content
+  author      String
+  publishedAt DateTime @default(now())
+  status      String   // "DRAFT", "PUBLISHED"
+}
+
+model Testimonial {
+  id        String   @id @default(uuid())
+  quote     String
+  name      String
+  role      String
+  company   String
+  vertical  String   // "Plywood", "Laminates", etc., or "General"
+  persona   String   // "Architect", "Designer", etc.
+  approved  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model PageContent {
+  id        String   @id @default(uuid())
+  page      String   // "home", "about", etc.
+  section   String   // e.g., "hero", "manifesto"
+  key       String   // e.g., "headline", "body"
+  value     String   // The text content
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([page, section, key])
+}
+
+model HeroMedia {
+  id          String   @id @default(uuid())
+  page        String   @unique // "home", "plywood", "laminates", "veneer", "decoratives", "about", "inspiration"
+  mediaType   String   // "image" or "video"
+  mediaUrl    String   // URL or local path
+  fallbackUrl String? // Image fallback for videos
+  createdAt   DateTime @default(now())
+}
