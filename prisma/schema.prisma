@@ -86,3 +86,68 @@ model HeroMedia {
   fallbackUrl String? // Image fallback for videos
   createdAt   DateTime @default(now())
 }
+
+model VisualizerScene {
+  id              String           @id @default(uuid())
+  name            String
+  slug            String           @unique
+  roomImage       String
+  naturalWidth    Int              @default(1024)
+  naturalHeight   Int              @default(1024)
+  status          String           // "DRAFT", "PUBLISHED"
+  displayOrder    Int              @default(0)
+  whereShown      String           // Comma-separated or JSON string array
+  overlaySettings String           // JSON settings
+  zones           VisualizerZone[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model VisualizerZone {
+  id                String          @id @default(uuid())
+  sceneId           String
+  scene             VisualizerScene @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  label             String
+  mask              String?
+  shadingLayer      String?
+  corners           String          // JSON array of corners
+  allowedCategories String          // JSON array of category names
+  defaultFinishId   String?
+  defaultFinish     Finish?         @relation(fields: [defaultFinishId], references: [id])
+  widthCm           Float?
+  heightCm          Float?
+  displayOrder      Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
+model FinishCategory {
+  id           String   @id @default(uuid())
+  name         String
+  slug         String   @unique
+  displayOrder Int      @default(0)
+  finishes     Finish[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Finish {
+  id              String          @id @default(uuid())
+  name            String
+  sku             String          @unique
+  specLine        String
+  categoryId      String
+  category        FinishCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  status          String          // "ACTIVE", "DISCONTINUED", "COMING_SOON"
+  thumbnailImage  String
+  tileableTexture String
+  pbrMaps         String?         // JSON settings
+  materialType    String          // "matte", "gloss", "satin", "wood", "stone"
+  tags            String          // Comma-separated or JSON
+  color           String?
+  tileWidthCm     Float?
+  tileHeightCm    Float?
+  defaultZones    VisualizerZone[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}

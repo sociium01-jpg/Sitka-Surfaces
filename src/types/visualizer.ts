@@ -39,11 +39,18 @@ export interface VisualizerZone {
 export interface VisualizerScene {
   id: string;
   name: string;
+  slug: string;
   roomImage: string;               // URL to background room photo
   naturalWidth: number;            // Pixel dimensions of room photo
   naturalHeight: number;
+  status: 'DRAFT' | 'PUBLISHED';
+  displayOrder: number;
+  whereShown: string[];
   zones: VisualizerZone[];
   overlaySettings: {
     opacity: number;               // Default per-zone overlay opacity
+    shadowIntensity?: number;
+    vignetteIntensity?: number;
+    edgeAO?: number;
   };
 }

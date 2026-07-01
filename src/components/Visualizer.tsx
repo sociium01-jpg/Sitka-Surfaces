@@ -1,51 +1,175 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useModal } from '@/context/ModalContext';
 import LaminateToWoodButton from '@/components/LaminateToWoodButton';
 import VisualizerCanvas from '@/components/VisualizerCanvas';
-import { defaultScene, FINISHES } from '@/lib/visualizerScene';
-import { Finish } from '@/types/visualizer';
+import { VisualizerScene, Finish } from '@/types/visualizer';
 
 export default function Visualizer() {
   const { openBrochure } = useModal();
 
-  // Create initial selections state from the defaultScene zones defaultFinish configuration
-  const initialSelections = useMemo(() => {
-    const state: Record<string, Finish> = {};
-    defaultScene.zones.forEach((z) => {
-      state[z.id] = z.defaultFinish;
-    });
-    return state;
-  }, []);
+  // CMS dynamic states
+  const [scenes, setScenes] = useState<VisualizerScene[]>([]);
+  const [finishes, setFinishes] = useState<Finish[]>([]);
+  const [activeSceneIdx, setActiveSceneIdx] = useState<number>(0);
 
-  const [selections, setSelections] = useState<Record<string, Finish>>(initialSelections);
-  const [activeZone, setActiveZone] = useState<string>('lowerCabinet');
-  const [activeCategory, setActiveCategory] = useState<string>('Laminates');
+  const [selections, setSelections] = useState<Record<string, Finish>>({});
+  const [activeZone, setActiveZone] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>('');
   const [hoveredZone, setHoveredZone] = useState<string | null>(null);
 
-  // Callbacks
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch CMS Data on Mount
+  useEffect(() => {
+    async function fetchVisualizerData() {
+      try {
+        const [scenesRes, finishesRes] = await Promise.all([
+          fetch('/api/visualizer/scenes'),
+          fetch('/api/visualizer/finishes'),
+        ]);
+
+        const [scenesData, finishesData] = await Promise.all([
+          scenesRes.json(),
+          finishesRes.json(),
+        ]);
+
+        if (scenesData.success && finishesData.success) {
+          const publishedScenes = scenesData.scenes.filter(
+            (s: VisualizerScene) => s.status === 'PUBLISHED'
+          );
+          setScenes(publishedScenes);
+          setFinishes(finishesData.finishes);
+
+          // Populate initial selections for the first active scene
+          if (publishedScenes.length > 0) {
+            const firstScene = publishedScenes[0];
+            const initialSels: Record<string, Finish> = {};
+            firstScene.zones.forEach((zone: any) => {
+              initialSels[zone.id] = zone.defaultFinish;
+            });
+            setSelections(initialSels);
+
+            if (firstScene.zones.length > 0) {
+              const defaultZone = firstScene.zones[0];
+              setActiveZone(defaultZone.id);
+              if (defaultZone.defaultFinish) {
+                setActiveCategory(defaultZone.defaultFinish.category);
+              }
+            }
+          }
+        } else {
+          setError('Failed to load Visualizer configuration from database.');
+        }
+      } catch (err) {
+        console.error('Fetch visualizer data error:', err);
+        setError('Connection error loading visualizer configurations.');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchVisualizerData();
+  }, []);
+
+  const activeScene = scenes[activeSceneIdx];
+
+  // Group fetched finishes by category name
+  const finishesCatalog = useMemo(() => {
+    const catalog: Record<string, Finish[]> = {};
+    finishes.forEach((f) => {
+      if (!catalog[f.category]) {
+        catalog[f.category] = [];
+      }
+      catalog[f.category].push(f);
+    });
+    return catalog;
+  }, [finishes]);
+
+  // Handler when scene changes
+  const handleSceneChange = (idx: number) => {
+    setActiveSceneIdx(idx);
+    const targetScene = scenes[idx];
+    const newSels: Record<string, Finish> = {};
+    targetScene.zones.forEach((z) => {
+      newSels[z.id] = z.defaultFinish;
+    });
+    setSelections(newSels);
+
+    if (targetScene.zones.length > 0) {
+      const defaultZone = targetScene.zones[0];
+      setActiveZone(defaultZone.id);
+      if (defaultZone.defaultFinish) {
+        setActiveCategory(defaultZone.defaultFinish.category);
+      }
+    }
+  };
+
   const handleZoneClick = (zoneId: string) => {
     setActiveZone(zoneId);
-    const zone = defaultScene.zones.find((z) => z.id === zoneId);
+    if (!activeScene) return;
+    const zone = activeScene.zones.find((z) => z.id === zoneId);
     if (zone) {
-      // Switch category if the current active category isn't allowed in this zone
-      const finish = selections[zoneId];
-      setActiveCategory(finish.category);
+      const currentFinish = selections[zoneId];
+      if (currentFinish) {
+        setActiveCategory(currentFinish.category);
+      } else if (zone.allowedCategories.length > 0) {
+        setActiveCategory(zone.allowedCategories[0]);
+      }
     }
   };
 
   const handleSelectFinish = (finish: Finish) => {
+    if (!activeZone) return;
     setSelections((prev) => ({ ...prev, [activeZone]: finish }));
   };
 
-  const currentSelection = selections[activeZone];
-  const activeZoneObj = defaultScene.zones.find((z) => z.id === activeZone);
+  if (loading) {
+    return (
+      <div className="w-full h-[500px] flex items-center justify-center bg-ink border border-line rounded-sm">
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 border-2 border-ember border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-[10px] font-mono text-stone-dim tracking-widest uppercase">
+            Loading Visualizer CMS...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Graceful empty state when no room scenes are published
+  if (scenes.length === 0 || !activeScene) {
+    return (
+      <div className="w-full py-24 px-8 flex flex-col items-center justify-center bg-ink-2/30 border border-line text-center rounded-sm">
+        <div className="max-w-md space-y-4">
+          <span className="block text-[8px] font-mono tracking-widest text-ember uppercase">
+            CMS DATA OFFLINE
+          </span>
+          <h3 className="font-display text-lg font-medium text-parchment">
+            No Published Scenes Available
+          </h3>
+          <p className="text-xs text-stone-dim leading-relaxed">
+            There are no room scenes published in the Admin CMS. Go to the Admin Visualizer page to create and configure masking zones.
+          </p>
+          <a
+            href="/admin/visualizer"
+            className="inline-block bg-ember text-ember-text font-mono text-[10px] tracking-widest uppercase px-6 py-3 hover:bg-ember-light transition-all rounded-sm font-semibold"
+          >
+            Configure Visualizer
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  const currentSelection = activeZone ? selections[activeZone] : null;
+  const activeZoneObj = activeZone ? activeScene.zones.find((z) => z.id === activeZone) : null;
   const activeZoneLabel = activeZoneObj?.label ?? '';
 
-  // Get only allowed finishes categories for active zone
+  // Get allowed finishes categories for active zone
   const allowedCategories = activeZoneObj?.allowedCategories || [];
-  const currentCategoryFinishes = FINISHES[activeCategory] || [];
+  const currentCategoryFinishes = finishesCatalog[activeCategory] || [];
 
   return (
     <div className="w-full flex flex-col xl:flex-row gap-0 items-stretch border border-line overflow-hidden">
@@ -54,7 +178,7 @@ export default function Visualizer() {
       ══════════════════════════════════════════════════════════════════════ */}
       <div className="relative flex-grow bg-[#0D0B09] h-[50vh] xl:h-auto min-h-[400px] xl:min-h-[600px] overflow-hidden">
         <VisualizerCanvas
-          scene={defaultScene}
+          scene={activeScene}
           selections={selections}
           activeZone={activeZone}
           hoveredZone={hoveredZone}
@@ -64,9 +188,7 @@ export default function Visualizer() {
 
         {/* Zone hotspot overlay labels (Responsive dynamic positioning) */}
         <div className="absolute inset-0 pointer-events-none select-none">
-          {defaultScene.zones.map((zone) => {
-            // Find centroid or label center (we map positions relative to middle)
-            // Let's use simple percentages for hotspot tags based on bounding box
+          {activeScene.zones.map((zone) => {
             const xs = zone.corners.map((c) => c[0]);
             const ys = zone.corners.map((c) => c[1]);
             const minX = Math.min(...xs);
@@ -77,8 +199,8 @@ export default function Visualizer() {
             const centerX = (minX + maxX) / 2;
             const centerY = (minY + maxY) / 2;
 
-            const pctX = (centerX / defaultScene.naturalWidth) * 100;
-            const pctY = (centerY / defaultScene.naturalHeight) * 100;
+            const pctX = (centerX / activeScene.naturalWidth) * 100;
+            const pctY = (centerY / activeScene.naturalHeight) * 100;
 
             const isActive = activeZone === zone.id;
 
@@ -102,14 +224,35 @@ export default function Visualizer() {
           })}
         </div>
 
-        {/* Top Left Corner info badge */}
-        <div className="absolute top-3 left-3 pointer-events-none z-10">
-          <span className="block text-[8px] font-mono tracking-widest text-ember uppercase opacity-90">
-            WebGL Realtime visualiser
-          </span>
-          <span className="block text-[10px] font-display font-medium text-white/80">
-            Select any surface directly to customize
-          </span>
+        {/* Top Left Corner Scene switcher dropdown/tabs (Only visible if > 1 scenes exist) */}
+        <div className="absolute top-3 left-3 z-10 space-y-2 pointer-events-auto">
+          {scenes.length > 1 ? (
+            <div className="flex items-center gap-1.5 bg-black/60 border border-line/50 p-1.5 rounded-sm backdrop-blur-md">
+              <span className="text-[8px] font-mono tracking-wider text-ember uppercase font-bold pl-1.5">
+                Room:
+              </span>
+              <select
+                value={activeSceneIdx}
+                onChange={(e) => handleSceneChange(Number(e.target.value))}
+                className="bg-transparent text-parchment text-[10px] font-display font-medium outline-none border-none pr-4 cursor-pointer"
+              >
+                {scenes.map((s, idx) => (
+                  <option key={s.id} value={idx} className="bg-ink text-parchment">
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="pointer-events-none">
+              <span className="block text-[8px] font-mono tracking-widest text-ember uppercase opacity-90">
+                Realtime Visualiser
+              </span>
+              <span className="block text-[10px] font-display font-medium text-white/80">
+                Click any surface directly to customize
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -123,7 +266,7 @@ export default function Visualizer() {
             Active Surface
           </span>
           <div className="flex flex-wrap gap-1.5">
-            {defaultScene.zones.map((z) => (
+            {activeScene.zones.map((z) => (
               <button
                 key={z.id}
                 onClick={() => handleZoneClick(z.id)}
@@ -145,7 +288,7 @@ export default function Visualizer() {
             Material Type
           </span>
           <div className="grid grid-cols-2 gap-1.5">
-            {Object.keys(FINISHES).map((cat) => {
+            {Object.keys(finishesCatalog).map((cat) => {
               const isAllowed = allowedCategories.includes(cat);
               const isActive = activeCategory === cat;
 
@@ -176,7 +319,7 @@ export default function Visualizer() {
           </span>
           <div className="grid grid-cols-3 gap-2">
             {currentCategoryFinishes.map((item) => {
-              const isSelected = selections[activeZone]?.id === item.id;
+              const isSelected = selections[activeZone || '']?.id === item.id;
               return (
                 <button
                   key={item.id}

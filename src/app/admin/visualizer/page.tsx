@@ -1,103 +1,311 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Save, Plus, Trash2, Eye, Edit2, Sliders } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Save, Plus, Trash2, Edit2, Sliders, Check, Settings, Copy, Image as ImageIcon } from 'lucide-react';
+import { VisualizerScene, VisualizerZone, Finish } from '@/types/visualizer';
 
-type ZoneDef = {
-  id: string;
-  label: string;
-  coords: string;
-  defaultFinish: string;
-};
+export default function VisualizerAdmin() {
+  // CMS state
+  const [scenes, setScenes] = useState<VisualizerScene[]>([]);
+  const [finishes, setFinishes] = useState<Finish[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; slug: string; displayOrder: number }[]>([]);
 
-type RoomScene = {
-  id: string;
-  name: string;
-  imagePoster: string;
-  zones: ZoneDef[];
-};
+  // Selection states
+  const [activeSceneIdx, setActiveSceneIdx] = useState<number>(0);
+  const [activeZoneId, setActiveZoneId] = useState<string | null>(null);
 
-export default function VisualizerSceneManager() {
-  const [scenes, setScenes] = useState<RoomScene[]>([
-    {
-      id: 'scene-kitchen',
-      name: 'Penthouse Kitchen Scene',
-      imagePoster: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=800&q=80',
-      zones: [
-        { id: 'wall', label: 'Feature Wall', coords: '50,50 450,50 450,450 50,450', defaultFinish: 'American Walnut Core' },
-        { id: 'floor', label: 'Floor', coords: '50,450 450,450 750,550 150,550', defaultFinish: 'Burmese Golden Teak' },
-        { id: 'cabinet', label: 'Cabinetry', coords: '450,200 750,200 750,450 450,450', defaultFinish: 'Matte Obsidian Charcoal' },
-        { id: 'countertop', label: 'Countertop', coords: '380,320 680,320 580,360 280,360', defaultFinish: 'Sitka Brand Yellow' },
-      ],
-    },
-    {
-      id: 'scene-lobby',
-      name: 'Commercial Lobby Scene',
-      imagePoster: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80',
-      zones: [
-        { id: 'wall', label: 'Acoustic Slat Wall', coords: '100,50 500,50 500,400 100,400', defaultFinish: 'Oak Acoustic Slat' },
-        { id: 'desk', label: 'Reception Desk', coords: '400,300 700,300 650,450 350,450', defaultFinish: 'American Walnut Core' },
-      ],
-    }
-  ]);
+  // Tab views
+  const [activeTab, setActiveTab] = useState<'scenes' | 'finishes' | 'categories'>('scenes');
 
-  const [activeSceneIdx, setActiveSceneIdx] = useState(0);
+  // Form states
+  const [editingFinish, setEditingFinish] = useState<Partial<Finish> | null>(null);
+  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string; displayOrder: number } | null>(null);
+
+  // Interaction logs
   const [successMsg, setSuccessMsg] = useState('');
-  const [newSceneName, setNewSceneName] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  // Canvas references for dragging corner points
+  const imgContainerRef = useRef<HTMLDivElement>(null);
+  const [draggedPointIdx, setDraggedPointIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    async function loadCMSData() {
+      try {
+        const [scenesRes, finishesRes, categoriesRes] = await Promise.all([
+          fetch('/api/visualizer/scenes'),
+          fetch('/api/visualizer/finishes'),
+          fetch('/api/visualizer/categories'),
+        ]);
+
+        const [scenesData, finishesData, categoriesData] = await Promise.all([
+          scenesRes.json(),
+          finishesRes.json(),
+          categoriesRes.json(),
+        ]);
+
+        if (scenesData.success) setScenes(scenesData.scenes);
+        if (finishesData.success) setFinishes(finishesData.finishes);
+        if (categoriesData.success) setCategories(categoriesData.categories);
+      } catch (err) {
+        console.error('Error loading visualizer CMS config', err);
+        setErrorMsg('Failed to load Visualizer configuration from server.');
+      }
+    }
+    loadCMSData();
+  }, []);
 
   const activeScene = scenes[activeSceneIdx];
+  const activeZoneObj = activeScene?.zones.find((z) => z.id === activeZoneId);
 
-  const handleUpdateZone = (zoneIdx: number, key: keyof ZoneDef, value: string) => {
-    const updatedScenes = [...scenes];
-    updatedScenes[activeSceneIdx].zones[zoneIdx] = {
-      ...updatedScenes[activeSceneIdx].zones[zoneIdx],
-      [key]: value
-    };
-    setScenes(updatedScenes);
+  // Save Scene to Database API
+  const handleSaveScene = async (sceneToSave: VisualizerScene) => {
+    setSaving(true);
+    setSuccessMsg('');
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/visualizer/scenes', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sceneToSave),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSuccessMsg('Scene successfully saved to CMS database.');
+        setTimeout(() => setSuccessMsg(''), 4000);
+      } else {
+        setErrorMsg(data.error || 'Failed to save scene.');
+      }
+    } catch (err) {
+      setErrorMsg('Network error saving scene configuration.');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleAddZone = () => {
-    const updatedScenes = [...scenes];
-    const newZone: ZoneDef = {
-      id: `zone-${Date.now()}`,
-      label: 'New Wall Zone',
-      coords: '100,100 200,100 200,200 100,200',
-      defaultFinish: 'Natural Birch Core'
-    };
-    updatedScenes[activeSceneIdx].zones.push(newZone);
-    setScenes(updatedScenes);
+  // Add a new scene
+  const handleCreateScene = async () => {
+    const name = prompt('Enter a name for the new Room Scene:');
+    if (!name) return;
+
+    try {
+      const res = await fetch('/api/visualizer/scenes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          roomImage: '/visualizer-room.png',
+          status: 'DRAFT',
+          displayOrder: scenes.length,
+          whereShown: ['HOMEPAGE', 'VISUALIZER'],
+          overlaySettings: { opacity: 0.75 },
+          zones: [],
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setScenes([...scenes, data.scene]);
+        setActiveSceneIdx(scenes.length);
+        setSuccessMsg('New Scene created successfully.');
+        setTimeout(() => setSuccessMsg(''), 3000);
+      }
+    } catch {
+      setErrorMsg('Failed to create new scene.');
+    }
   };
 
-  const handleDeleteZone = (zoneId: string) => {
-    const updatedScenes = [...scenes];
-    updatedScenes[activeSceneIdx].zones = updatedScenes[activeSceneIdx].zones.filter(z => z.id !== zoneId);
-    setScenes(updatedScenes);
+  // Delete scene
+  const handleDeleteScene = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this scene? This is irreversible.')) return;
+    try {
+      const res = await fetch(`/api/visualizer/scenes?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setScenes(scenes.filter((s) => s.id !== id));
+        setActiveSceneIdx(0);
+        setSuccessMsg('Scene deleted successfully.');
+        setTimeout(() => setSuccessMsg(''), 3000);
+      }
+    } catch {
+      setErrorMsg('Failed to delete scene.');
+    }
   };
 
-  const handleCreateScene = () => {
-    if (!newSceneName) return;
-    const newScene: RoomScene = {
+  // Duplicate scene
+  const handleDuplicateScene = (scene: VisualizerScene) => {
+    const duplicated: VisualizerScene = {
+      ...scene,
       id: `scene-${Date.now()}`,
-      name: newSceneName,
-      imagePoster: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80',
-      zones: [
-        { id: 'wall', label: 'Feature Wall', coords: '100,100 300,100 300,300 100,300', defaultFinish: 'Natural Birch Core' }
-      ]
+      name: `${scene.name} (Copy)`,
+      slug: `${scene.slug}-copy`,
+      zones: scene.zones.map((z) => ({ ...z, id: `zone-${Date.now()}-${Math.random().toString(36).substr(2, 5)}` })),
     };
-    setScenes([...scenes, newScene]);
+    setScenes([...scenes, duplicated]);
     setActiveSceneIdx(scenes.length);
-    setNewSceneName('');
   };
 
-  const handleDeleteScene = (id: string) => {
-    if (scenes.length === 1) return;
-    setScenes(scenes.filter(s => s.id !== id));
-    setActiveSceneIdx(0);
+  // Add Zone to active scene
+  const handleAddZone = () => {
+    if (!activeScene) return;
+    const label = prompt('Enter name for the new Surface Zone:');
+    if (!label) return;
+
+    const newZone: VisualizerZone = {
+      id: `zone-${Date.now()}`,
+      label,
+      mask: null,
+      shadingLayer: null,
+      corners: [
+        [100, 100], // TL
+        [300, 100], // TR
+        [300, 300], // BR
+        [100, 300], // BL
+      ],
+      widthCm: 200,
+      heightCm: 150,
+      allowedCategories: ['Laminates', 'Plywood'],
+      defaultFinish: finishes[0] || (null as any),
+      displayOrder: activeScene.zones.length + 1,
+    };
+
+    const updatedZones = [...activeScene.zones, newZone];
+    const updatedScene = { ...activeScene, zones: updatedZones };
+    const updatedScenes = [...scenes];
+    updatedScenes[activeSceneIdx] = updatedScene;
+
+    setScenes(updatedScenes);
+    setActiveZoneId(newZone.id);
   };
 
-  const handleSave = () => {
-    setSuccessMsg('Visualizer configuration stored successfully!');
-    setTimeout(() => setSuccessMsg(''), 3000);
+  // Delete Zone
+  const handleDeleteZone = (zoneId: string) => {
+    if (!activeScene) return;
+    const updatedZones = activeScene.zones.filter((z) => z.id !== zoneId);
+    const updatedScene = { ...activeScene, zones: updatedZones };
+    const updatedScenes = [...scenes];
+    updatedScenes[activeSceneIdx] = updatedScene;
+    setScenes(updatedScenes);
+    if (activeZoneId === zoneId) setActiveZoneId(null);
+  };
+
+  // Drag handles configuration on room image
+  const handleHandleMouseDown = (e: React.MouseEvent, idx: number) => {
+    e.preventDefault();
+    setDraggedPointIdx(idx);
+  };
+
+  const handleContainerMouseMove = (e: React.MouseEvent) => {
+    if (draggedPointIdx === null || !activeScene || !activeZoneObj || !imgContainerRef.current) return;
+
+    const container = imgContainerRef.current;
+    const rect = container.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Convert to 1024x1024 natural coordinate space
+    const naturalX = Math.max(0, Math.min(1024, Math.round((x * activeScene.naturalWidth) / rect.width)));
+    const naturalY = Math.max(0, Math.min(1024, Math.round((y * activeScene.naturalHeight) / rect.height)));
+
+    const updatedCorners = [...activeZoneObj.corners];
+    updatedCorners[draggedPointIdx] = [naturalX, naturalY];
+
+    const updatedZones = activeScene.zones.map((z) => (z.id === activeZoneId ? { ...z, corners: updatedCorners as any } : z));
+    const updatedScene = { ...activeScene, zones: updatedZones };
+    const updatedScenes = [...scenes];
+    updatedScenes[activeSceneIdx] = updatedScene;
+    setScenes(updatedScenes);
+  };
+
+  const handleContainerMouseUp = () => {
+    setDraggedPointIdx(null);
+  };
+
+  // Finish Save CRUD
+  const handleSaveFinish = async () => {
+    if (!editingFinish) return;
+    try {
+      const isNew = !editingFinish.id;
+      const url = '/api/visualizer/finishes';
+      const method = isNew ? 'POST' : 'PUT';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingFinish),
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (isNew) {
+          setFinishes([...finishes, data.finish]);
+        } else {
+          setFinishes(finishes.map((f) => (f.id === editingFinish.id ? data.finish : f)));
+        }
+        setEditingFinish(null);
+        setSuccessMsg('Material finish stored in database catalog successfully.');
+        setTimeout(() => setSuccessMsg(''), 3000);
+      }
+    } catch {
+      setErrorMsg('Failed to save finish product.');
+    }
+  };
+
+  // Finish Delete CRUD
+  const handleDeleteFinish = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this finish?')) return;
+    try {
+      const res = await fetch(`/api/visualizer/finishes?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setFinishes(finishes.filter((f) => f.id !== id));
+        setSuccessMsg('Finish deleted successfully.');
+        setTimeout(() => setSuccessMsg(''), 3000);
+      }
+    } catch {
+      setErrorMsg('Failed to delete finish.');
+    }
+  };
+
+  // Category Save CRUD
+  const handleSaveCategory = async () => {
+    if (!editingCategory) return;
+    try {
+      const isNew = !editingCategory.id;
+      const url = '/api/visualizer/categories';
+      const method = isNew ? 'POST' : 'PUT';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingCategory),
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (isNew) {
+          setCategories([...categories, data.category]);
+        } else {
+          setCategories(categories.map((c) => (c.id === editingCategory.id ? data.category : c)));
+        }
+        setEditingCategory(null);
+        setSuccessMsg('Category saved successfully.');
+        setTimeout(() => setSuccessMsg(''), 3000);
+      }
+    } catch {
+      setErrorMsg('Failed to save category.');
+    }
+  };
+
+  // Category Delete CRUD
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm('Delete this category? Finishes belonging to this category will be detached/deleted.')) return;
+    try {
+      const res = await fetch(`/api/visualizer/categories?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setCategories(categories.filter((c) => c.id !== id));
+        setSuccessMsg('Category deleted.');
+        setTimeout(() => setSuccessMsg(''), 3000);
+      }
+    } catch {
+      setErrorMsg('Failed to delete category.');
+    }
   };
 
   return (
@@ -105,16 +313,25 @@ export default function VisualizerSceneManager() {
       {/* Header */}
       <div className="flex justify-between items-center border-b border-line pb-4">
         <div>
-          <span className="block text-[8px] font-mono tracking-widest text-brass uppercase">3D Visualizer Configuration</span>
-          <h1 className="text-2xl font-display font-medium text-parchment">Visualizer Scene Manager</h1>
+          <span className="block text-[8px] font-mono tracking-widest text-brass uppercase">
+            3D Visualizer Configuration
+          </span>
+          <h1 className="text-2xl font-display font-medium text-parchment">
+            Visualizer Scene & Product Manager
+          </h1>
         </div>
 
-        <button
-          onClick={handleSave}
-          className="flex items-center gap-1.5 bg-ember hover:bg-ember-light text-ember-text font-mono text-[10px] tracking-wider uppercase font-semibold py-2 px-5 rounded-sm transition-colors cursor-pointer"
-        >
-          <Save className="w-3.5 h-3.5" /> Save Configuration
-        </button>
+        <div className="flex gap-2">
+          {activeTab === 'scenes' && activeScene && (
+            <button
+              onClick={() => handleSaveScene(activeScene)}
+              disabled={saving}
+              className="flex items-center gap-1.5 bg-ember hover:bg-ember-light text-ember-text font-mono text-[10px] tracking-wider uppercase font-semibold py-2.5 px-5 rounded-sm transition-colors cursor-pointer"
+            >
+              <Save className="w-3.5 h-3.5" /> {saving ? 'Saving...' : 'Save Current Scene'}
+            </button>
+          )}
+        </div>
       </div>
 
       {successMsg && (
@@ -122,186 +339,779 @@ export default function VisualizerSceneManager() {
           {successMsg}
         </div>
       )}
+      {errorMsg && (
+        <div className="bg-red-950/20 border border-red-500 text-red-400 p-3 text-xs font-mono rounded-sm">
+          {errorMsg}
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Scene Selector & Zone Editor */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Scene selector tabs */}
-          <div className="bg-ink-2/40 border border-line p-4 rounded-sm space-y-3">
-            <span className="block text-[9px] font-mono tracking-widest text-brass uppercase">Active Rooms / Scenes</span>
-            <div className="flex flex-wrap gap-2">
-              {scenes.map((s, idx) => (
-                <div key={s.id} className="flex items-center border border-line rounded-sm overflow-hidden bg-ink">
-                  <button
-                    onClick={() => setActiveSceneIdx(idx)}
-                    className={`px-4 py-2 text-xs font-medium cursor-pointer transition-colors ${
-                      activeSceneIdx === idx
-                        ? 'bg-ember text-ember-text font-semibold'
-                        : 'text-stone hover:text-parchment'
+      {/* Tabs */}
+      <div className="flex border-b border-line/40">
+        <button
+          onClick={() => setActiveTab('scenes')}
+          className={`px-6 py-3 text-xs font-mono uppercase tracking-wider border-b-2 cursor-pointer transition-all ${
+            activeTab === 'scenes'
+              ? 'border-ember text-ember font-bold'
+              : 'border-transparent text-stone-dim hover:text-stone'
+          }`}
+        >
+          Room Scenes
+        </button>
+        <button
+          onClick={() => setActiveTab('finishes')}
+          className={`px-6 py-3 text-xs font-mono uppercase tracking-wider border-b-2 cursor-pointer transition-all ${
+            activeTab === 'finishes'
+              ? 'border-ember text-ember font-bold'
+              : 'border-transparent text-stone-dim hover:text-stone'
+          }`}
+        >
+          Product Swatches
+        </button>
+        <button
+          onClick={() => setActiveTab('categories')}
+          className={`px-6 py-3 text-xs font-mono uppercase tracking-wider border-b-2 cursor-pointer transition-all ${
+            activeTab === 'categories'
+              ? 'border-ember text-ember font-bold'
+              : 'border-transparent text-stone-dim hover:text-stone'
+          }`}
+        >
+          Material Verticals
+        </button>
+      </div>
+
+      {/* ===================================================================
+          TAB 1: ROOM SCENES
+      =================================================================== */}
+      {activeTab === 'scenes' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left: scenes list and settings */}
+          <div className="lg:col-span-8 space-y-6">
+            <div className="bg-ink-2/40 border border-line p-4 rounded-sm space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="block text-[9px] font-mono tracking-widest text-brass uppercase">
+                  Published Rooms
+                </span>
+                <button
+                  onClick={handleCreateScene}
+                  className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-wider text-brass hover:text-parchment cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /> New Scene
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {scenes.map((s, idx) => (
+                  <div
+                    key={s.id}
+                    className={`flex items-center border rounded-sm overflow-hidden bg-ink ${
+                      activeSceneIdx === idx ? 'border-ember' : 'border-line'
                     }`}
                   >
-                    {s.name}
-                  </button>
-                  <button
-                    onClick={() => handleDeleteScene(s.id)}
-                    disabled={scenes.length === 1}
-                    className="p-2 text-stone-dim hover:text-red-400 border-l border-line/40 disabled:opacity-30 cursor-pointer"
-                    title="Delete Scene"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Room details */}
-          <div className="bg-ink-2/40 border border-line p-6 rounded-sm space-y-4">
-            <span className="block text-[9px] font-mono tracking-widest text-brass uppercase">Room Scene Properties</span>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">Scene Name</label>
-                <input
-                  type="text"
-                  value={activeScene.name}
-                  onChange={(e) => {
-                    const updated = [...scenes];
-                    updated[activeSceneIdx].name = e.target.value;
-                    setScenes(updated);
-                  }}
-                  className="w-full bg-ink border border-line p-2.5 text-xs text-parchment rounded-sm focus:border-ember outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">Background Image URL</label>
-                <input
-                  type="text"
-                  value={activeScene.imagePoster}
-                  onChange={(e) => {
-                    const updated = [...scenes];
-                    updated[activeSceneIdx].imagePoster = e.target.value;
-                    setScenes(updated);
-                  }}
-                  className="w-full bg-ink border border-line p-2.5 text-xs text-parchment rounded-sm focus:border-ember outline-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Zones coordinates manager */}
-          <div className="bg-ink-2/40 border border-line p-6 rounded-sm space-y-4">
-            <div className="flex justify-between items-center border-b border-line/30 pb-3">
-              <span className="block text-[9px] font-mono tracking-widest text-brass uppercase">Surface Mask Zones</span>
-              <button
-                onClick={handleAddZone}
-                className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-wider text-brass hover:text-parchment cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" /> Add Mask Zone
-              </button>
-            </div>
-
-            <div className="space-y-6 divide-y divide-line/30">
-              {activeScene.zones.map((zone, zIdx) => (
-                <div key={zone.id} className={`pt-4 first:pt-0 grid grid-cols-1 md:grid-cols-12 gap-4 items-start`}>
-                  <div className="md:col-span-3">
-                    <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">Zone Label</label>
-                    <input
-                      type="text"
-                      value={zone.label}
-                      onChange={(e) => handleUpdateZone(zIdx, 'label', e.target.value)}
-                      className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
-                    />
-                  </div>
-
-                  <div className="md:col-span-5">
-                    <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">SVG Polygon Points</label>
-                    <input
-                      type="text"
-                      value={zone.coords}
-                      onChange={(e) => handleUpdateZone(zIdx, 'coords', e.target.value)}
-                      className="w-full bg-ink border border-line p-2 text-xs font-mono text-ember-light rounded-sm focus:border-ember outline-none"
-                    />
-                  </div>
-
-                  <div className="md:col-span-3">
-                    <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">Default Finish</label>
-                    <input
-                      type="text"
-                      value={zone.defaultFinish}
-                      onChange={(e) => handleUpdateZone(zIdx, 'defaultFinish', e.target.value)}
-                      className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
-                    />
-                  </div>
-
-                  <div className="md:col-span-1 flex items-center justify-end mt-5">
                     <button
-                      onClick={() => handleDeleteZone(zone.id)}
-                      className="p-2 border border-line/50 hover:border-red-500 text-stone-dim hover:text-red-400 rounded-sm cursor-pointer transition-colors"
-                      title="Delete Zone"
+                      onClick={() => {
+                        setActiveSceneIdx(idx);
+                        setActiveZoneId(null);
+                      }}
+                      className={`px-4 py-2 text-xs font-medium cursor-pointer transition-colors ${
+                        activeSceneIdx === idx
+                          ? 'bg-ember text-ember-text font-semibold'
+                          : 'text-stone hover:text-parchment'
+                      }`}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      {s.name}
+                    </button>
+                    <button
+                      onClick={() => handleDuplicateScene(s)}
+                      className="p-2 text-stone-dim hover:text-parchment border-l border-line/40 cursor-pointer"
+                      title="Duplicate Scene"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteScene(s.id)}
+                      disabled={scenes.length === 1}
+                      className="p-2 text-stone-dim hover:text-red-400 border-l border-line/40 disabled:opacity-30 cursor-pointer"
+                      title="Delete Scene"
+                    >
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
+
+            {activeScene && (
+              <>
+                {/* Scene configurations */}
+                <div className="bg-ink-2/40 border border-line p-6 rounded-sm space-y-4">
+                  <span className="block text-[9px] font-mono tracking-widest text-brass uppercase">
+                    Scene Properties
+                  </span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                        Scene Name
+                      </label>
+                      <input
+                        type="text"
+                        value={activeScene.name}
+                        onChange={(e) => {
+                          const updated = [...scenes];
+                          updated[activeSceneIdx].name = e.target.value;
+                          setScenes(updated);
+                        }}
+                        className="w-full bg-ink border border-line p-2.5 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                        Background Image URL
+                      </label>
+                      <input
+                        type="text"
+                        value={activeScene.roomImage}
+                        onChange={(e) => {
+                          const updated = [...scenes];
+                          updated[activeSceneIdx].roomImage = e.target.value;
+                          setScenes(updated);
+                        }}
+                        className="w-full bg-ink border border-line p-2.5 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                        Publish Status
+                      </label>
+                      <select
+                        value={activeScene.status}
+                        onChange={(e) => {
+                          const updated = [...scenes];
+                          updated[activeSceneIdx].status = e.target.value as any;
+                          setScenes(updated);
+                        }}
+                        className="w-full bg-ink border border-line p-2.5 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                      >
+                        <option value="DRAFT">Draft</option>
+                        <option value="PUBLISHED">Published</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                        Display Order
+                      </label>
+                      <input
+                        type="number"
+                        value={activeScene.displayOrder}
+                        onChange={(e) => {
+                          const updated = [...scenes];
+                          updated[activeSceneIdx].displayOrder = Number(e.target.value);
+                          setScenes(updated);
+                        }}
+                        className="w-full bg-ink border border-line p-2.5 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Perspective Drag Canvas Overlay */}
+                {activeZoneId && activeZoneObj && (
+                  <div className="bg-ink-2/40 border border-line p-6 rounded-sm space-y-4">
+                    <span className="block text-[9px] font-mono tracking-widest text-brass uppercase">
+                      Perspective Corners Editor
+                    </span>
+                    <p className="text-[10px] text-stone-dim">
+                      Drag the 4 corner handles directly on the room image below to configure the quad skew coordinates for zone <strong>{activeZoneObj.label}</strong>.
+                    </p>
+
+                    <div
+                      ref={imgContainerRef}
+                      onMouseMove={handleContainerMouseMove}
+                      onMouseUp={handleContainerMouseUp}
+                      onMouseLeave={handleContainerMouseUp}
+                      className="relative w-full aspect-square bg-black border border-line overflow-hidden select-none"
+                      style={{ maxHeight: '500px' }}
+                    >
+                      <img
+                        src={activeScene.roomImage}
+                        alt="Scene room"
+                        className="w-full h-full object-cover pointer-events-none"
+                      />
+
+                      {/* Quad visual outline */}
+                      <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                        <polygon
+                          points={activeZoneObj.corners
+                            .map(([x, y]) => {
+                              if (!imgContainerRef.current) return '0,0';
+                              const rect = imgContainerRef.current.getBoundingClientRect();
+                              const px = (x / activeScene.naturalWidth) * rect.width;
+                              const py = (y / activeScene.naturalHeight) * rect.height;
+                              return `${px},${py}`;
+                            })
+                            .join(' ')}
+                          fill="rgba(245, 184, 0, 0.15)"
+                          stroke="#F5B800"
+                          strokeWidth="2"
+                        />
+                      </svg>
+
+                      {/* Handles */}
+                      {activeZoneObj.corners.map(([x, y], idx) => {
+                        if (!imgContainerRef.current) return null;
+                        const rect = imgContainerRef.current.getBoundingClientRect();
+                        const left = (x / activeScene.naturalWidth) * rect.width;
+                        const top = (y / activeScene.naturalHeight) * rect.height;
+
+                        return (
+                          <div
+                            key={idx}
+                            onMouseDown={(e) => handleHandleMouseDown(e, idx)}
+                            className="absolute w-5 h-5 -ml-2.5 -mt-2.5 rounded-full border border-parchment bg-ember flex items-center justify-center cursor-move text-[8px] font-bold text-ember-text shadow-lg z-20"
+                            style={{ left: `${left}px`, top: `${top}px` }}
+                          >
+                            {idx + 1}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Right Column: Zones list details */}
+          <div className="lg:col-span-4 space-y-6">
+            {activeScene && (
+              <div className="bg-ink-2/40 border border-line p-5 rounded-sm space-y-4">
+                <div className="flex justify-between items-center border-b border-line/30 pb-2">
+                  <span className="block text-[9px] font-mono tracking-widest text-brass uppercase font-semibold">
+                    Surface Zones ({activeScene.zones.length})
+                  </span>
+                  <button
+                    onClick={handleAddZone}
+                    className="text-[9px] font-mono uppercase text-brass hover:text-ember flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add
+                  </button>
+                </div>
+
+                <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                  {activeScene.zones.map((z) => (
+                    <div
+                      key={z.id}
+                      onClick={() => setActiveZoneId(z.id)}
+                      className={`p-3 border rounded-sm flex items-center justify-between cursor-pointer transition-all ${
+                        activeZoneId === z.id
+                          ? 'border-ember bg-ember/5'
+                          : 'border-line hover:border-stone-dim'
+                      }`}
+                    >
+                      <div>
+                        <span className="block text-xs font-semibold text-parchment leading-tight">
+                          {z.label}
+                        </span>
+                        <span className="text-[8px] font-mono text-stone-dim uppercase tracking-wider block mt-1">
+                          Allowed: {z.allowedCategories.join(', ')}
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteZone(z.id);
+                        }}
+                        className="text-stone-dim hover:text-red-400 p-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Edit active zone properties */}
+                {activeZoneId && activeZoneObj && (
+                  <div className="border-t border-line/30 pt-4 space-y-3">
+                    <span className="block text-[9px] font-mono tracking-widest text-brass uppercase">
+                      Edit Zone: {activeZoneObj.label}
+                    </span>
+
+                    <div>
+                      <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                        Zone Label
+                      </label>
+                      <input
+                        type="text"
+                        value={activeZoneObj.label}
+                        onChange={(e) => {
+                          const updatedZones = activeScene.zones.map((z) =>
+                            z.id === activeZoneId ? { ...z, label: e.target.value } : z
+                          );
+                          const updatedScenes = [...scenes];
+                          updatedScenes[activeSceneIdx].zones = updatedZones;
+                          setScenes(updatedScenes);
+                        }}
+                        className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                          Width (cm)
+                        </label>
+                        <input
+                          type="number"
+                          value={activeZoneObj.widthCm || ''}
+                          onChange={(e) => {
+                            const updatedZones = activeScene.zones.map((z) =>
+                              z.id === activeZoneId ? { ...z, widthCm: Number(e.target.value) } : z
+                            );
+                            const updatedScenes = [...scenes];
+                            updatedScenes[activeSceneIdx].zones = updatedZones;
+                            setScenes(updatedScenes);
+                          }}
+                          className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                          Height (cm)
+                        </label>
+                        <input
+                          type="number"
+                          value={activeZoneObj.heightCm || ''}
+                          onChange={(e) => {
+                            const updatedZones = activeScene.zones.map((z) =>
+                              z.id === activeZoneId ? { ...z, heightCm: Number(e.target.value) } : z
+                            );
+                            const updatedScenes = [...scenes];
+                            updatedScenes[activeSceneIdx].zones = updatedZones;
+                            setScenes(updatedScenes);
+                          }}
+                          className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                        Allowed Categories
+                      </label>
+                      <div className="grid grid-cols-2 gap-1.5 pt-1">
+                        {categories.map((c) => {
+                          const isAllowed = activeZoneObj.allowedCategories.includes(c.name);
+                          return (
+                            <label
+                              key={c.id}
+                              className="flex items-center gap-1.5 text-[10px] text-stone-dim cursor-pointer hover:text-stone"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isAllowed}
+                                onChange={() => {
+                                  const cats = isAllowed
+                                    ? activeZoneObj.allowedCategories.filter((cat) => cat !== c.name)
+                                    : [...activeZoneObj.allowedCategories, c.name];
+                                  const updatedZones = activeScene.zones.map((z) =>
+                                    z.id === activeZoneId ? { ...z, allowedCategories: cats } : z
+                                  );
+                                  const updatedScenes = [...scenes];
+                                  updatedScenes[activeSceneIdx].zones = updatedZones;
+                                  setScenes(updatedScenes);
+                                }}
+                                className="accent-ember"
+                              />
+                              {c.name}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                        Default Finish
+                      </label>
+                      <select
+                        value={activeZoneObj.defaultFinish?.id || ''}
+                        onChange={(e) => {
+                          const fin = finishes.find((f) => f.id === e.target.value);
+                          if (!fin) return;
+                          const updatedZones = activeScene.zones.map((z) =>
+                            z.id === activeZoneId ? { ...z, defaultFinish: fin } : z
+                          );
+                          const updatedScenes = [...scenes];
+                          updatedScenes[activeSceneIdx].zones = updatedZones;
+                          setScenes(updatedScenes);
+                        }}
+                        className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                      >
+                        <option value="">Select Swatch</option>
+                        {finishes
+                          .filter((f) => activeZoneObj.allowedCategories.includes(f.category))
+                          .map((f) => (
+                            <option key={f.id} value={f.id}>
+                              {f.name} ({f.sku})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
+      )}
 
-        {/* Right Column: Mini live preview HUD & Create Scene */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* Mini Live Preview HUD */}
-          <div className="bg-[#110E0C] border border-line p-6 rounded-sm space-y-4">
-            <span className="block text-[9px] font-mono tracking-widest text-brass uppercase border-b border-line/30 pb-2">
-              Zone Coordinates HUD
+      {/* ===================================================================
+          TAB 2: PRODUCT SWATCHES
+      =================================================================== */}
+      {activeTab === 'finishes' && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center bg-ink-2/40 border border-line p-4 rounded-sm">
+            <span className="text-[10px] font-mono tracking-widest text-brass uppercase font-semibold">
+              Product Finish Swatches ({finishes.length})
             </span>
-
-            {/* SVG Render box displaying coordinates */}
-            <div className="w-full h-48 bg-[#0a0806] border border-line/50 relative flex items-center justify-center">
-              <svg viewBox="0 0 800 600" className="w-full h-full p-2">
-                {activeScene.zones.map(zone => (
-                  <polygon
-                    key={zone.id}
-                    points={zone.coords}
-                    fill="rgba(245, 184, 0, 0.25)"
-                    stroke="#F5B800"
-                    strokeWidth="3"
-                  />
-                ))}
-              </svg>
-            </div>
-            <p className="text-[9px] font-mono text-stone-dim leading-relaxed uppercase tracking-wider text-center">
-              Active surface masks loaded from values.
-            </p>
+            <button
+              onClick={() =>
+                setEditingFinish({
+                  name: '',
+                  sku: '',
+                  specLine: '',
+                  category: categories[0]?.name || 'Laminates',
+                  thumbnailImage: '',
+                  tileableTexture: '',
+                  materialType: 'matte',
+                  tags: [],
+                })
+              }
+              className="bg-ember hover:bg-ember-light text-ember-text font-mono text-[9px] tracking-wider uppercase font-semibold py-2 px-4 rounded-sm flex items-center gap-1 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add Finish Swatch
+            </button>
           </div>
 
-          {/* Create scene box */}
-          <div className="bg-ink-2/30 border border-line p-6 space-y-4">
-            <span className="block text-[9px] font-mono tracking-widest text-brass uppercase">Create Room Scene</span>
-            
-            <div className="space-y-3">
-              <div>
-                <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">New Scene Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Master Bedroom"
-                  value={newSceneName}
-                  onChange={(e) => setNewSceneName(e.target.value)}
-                  className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
-                />
+          {/* Form Modal/Section */}
+          {editingFinish && (
+            <div className="bg-ink-2/40 border border-line p-6 rounded-sm space-y-4 max-w-2xl">
+              <span className="block text-[10px] font-mono tracking-widest text-brass uppercase">
+                {editingFinish.id ? 'Edit Finish Swatch' : 'New Finish Swatch'}
+              </span>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Finish Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editingFinish.name}
+                    onChange={(e) => setEditingFinish({ ...editingFinish, name: e.target.value })}
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                    placeholder="e.g. Matte Obsidian Charcoal"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    SKU Code
+                  </label>
+                  <input
+                    type="text"
+                    value={editingFinish.sku}
+                    onChange={(e) => setEditingFinish({ ...editingFinish, sku: e.target.value })}
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                    placeholder="e.g. LAM-CHAR-12"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Material Vertical (Category)
+                  </label>
+                  <select
+                    value={editingFinish.category}
+                    onChange={(e) => setEditingFinish({ ...editingFinish, category: e.target.value })}
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                  >
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Specular Highlight Type
+                  </label>
+                  <select
+                    value={editingFinish.materialType}
+                    onChange={(e) =>
+                      setEditingFinish({ ...editingFinish, materialType: e.target.value as any })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                  >
+                    <option value="matte">Matte</option>
+                    <option value="gloss">Gloss (Adds reflection streak)</option>
+                    <option value="satin">Satin (Soft reflection)</option>
+                    <option value="wood">Wood Grain Texture</option>
+                    <option value="stone">Stone/Concrete Texture</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Specification Detail Line
+                  </label>
+                  <input
+                    type="text"
+                    value={editingFinish.specLine}
+                    onChange={(e) => setEditingFinish({ ...editingFinish, specLine: e.target.value })}
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                    placeholder="e.g. BWR Grade · 18mm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Solid Color Fallback (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={editingFinish.color || ''}
+                    onChange={(e) => setEditingFinish({ ...editingFinish, color: e.target.value })}
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                    placeholder="e.g. #2C2825"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Thumbnail Image URL
+                  </label>
+                  <input
+                    type="text"
+                    value={editingFinish.thumbnailImage || ''}
+                    onChange={(e) =>
+                      setEditingFinish({ ...editingFinish, thumbnailImage: e.target.value })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Tileable Seamless Texture URL
+                  </label>
+                  <input
+                    type="text"
+                    value={editingFinish.tileableTexture || ''}
+                    onChange={(e) =>
+                      setEditingFinish({ ...editingFinish, tileableTexture: e.target.value })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Texture Tile Width (cm)
+                  </label>
+                  <input
+                    type="number"
+                    value={editingFinish.tileWidthCm || ''}
+                    onChange={(e) =>
+                      setEditingFinish({ ...editingFinish, tileWidthCm: Number(e.target.value) })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                    placeholder="e.g. 60"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Texture Tile Height (cm)
+                  </label>
+                  <input
+                    type="number"
+                    value={editingFinish.tileHeightCm || ''}
+                    onChange={(e) =>
+                      setEditingFinish({ ...editingFinish, tileHeightCm: Number(e.target.value) })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                    placeholder="e.g. 60"
+                  />
+                </div>
               </div>
 
-              <button
-                onClick={handleCreateScene}
-                className="w-full flex items-center justify-center gap-1.5 bg-ink border border-line hover:border-ember text-parchment font-mono text-[9px] tracking-wider uppercase py-3 rounded-sm hover:bg-ember/10 transition-colors cursor-pointer mt-4"
-              >
-                <Plus className="w-4 h-4" /> Create Scene
-              </button>
+              <div className="flex gap-2 justify-end pt-4 border-t border-line/30">
+                <button
+                  onClick={() => setEditingFinish(null)}
+                  className="bg-transparent border border-line hover:border-stone text-stone hover:text-parchment font-mono text-[9px] uppercase tracking-wider py-2 px-4 rounded-sm cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveFinish}
+                  className="bg-ember hover:bg-ember-light text-ember-text font-mono text-[9px] uppercase tracking-wider font-semibold py-2 px-5 rounded-sm cursor-pointer"
+                >
+                  Save Finish
+                </button>
+              </div>
             </div>
+          )}
+
+          {/* List of finishes */}
+          <div className="bg-ink-2/40 border border-line rounded-sm overflow-hidden">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-line text-[8px] font-mono uppercase text-brass tracking-widest bg-black/40">
+                  <th className="p-4">Swatch</th>
+                  <th className="p-4">Name</th>
+                  <th className="p-4">SKU</th>
+                  <th className="p-4">Category</th>
+                  <th className="p-4">Type</th>
+                  <th className="p-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line/30 text-xs">
+                {finishes.map((f) => (
+                  <tr key={f.id} className="hover:bg-ink-2/20">
+                    <td className="p-4">
+                      {f.color ? (
+                        <div className="w-8 h-8 rounded-sm" style={{ backgroundColor: f.color }} />
+                      ) : (
+                        <img
+                          src={f.thumbnailImage}
+                          alt={f.name}
+                          className="w-8 h-8 rounded-sm object-cover"
+                        />
+                      )}
+                    </td>
+                    <td className="p-4 font-semibold text-parchment">{f.name}</td>
+                    <td className="p-4 font-mono text-stone-dim text-[10px]">{f.sku}</td>
+                    <td className="p-4 text-stone">{f.category}</td>
+                    <td className="p-4 font-mono text-[10px] text-brass uppercase">{f.materialType}</td>
+                    <td className="p-4 text-right space-x-1.5">
+                      <button
+                        onClick={() => setEditingFinish(f)}
+                        className="inline-flex p-1.5 border border-line/60 hover:border-parchment rounded-sm cursor-pointer transition-colors"
+                        title="Edit Swatch"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteFinish(f.id)}
+                        className="inline-flex p-1.5 border border-line/60 hover:border-red-500 text-stone-dim hover:text-red-400 rounded-sm cursor-pointer transition-colors"
+                        title="Delete Swatch"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* ===================================================================
+          TAB 3: MATERIAL VERTICALS
+      =================================================================== */}
+      {activeTab === 'categories' && (
+        <div className="max-w-2xl space-y-6">
+          <div className="flex justify-between items-center bg-ink-2/40 border border-line p-4 rounded-sm">
+            <span className="text-[10px] font-mono tracking-widest text-brass uppercase font-semibold">
+              Material Categories ({categories.length})
+            </span>
+            <button
+              onClick={() => setEditingCategory({ id: '', name: '', displayOrder: categories.length })}
+              className="bg-ember hover:bg-ember-light text-ember-text font-mono text-[9px] tracking-wider uppercase font-semibold py-2 px-4 rounded-sm flex items-center gap-1 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add Category
+            </button>
+          </div>
+
+          {editingCategory && (
+            <div className="bg-ink-2/40 border border-line p-5 rounded-sm space-y-4">
+              <span className="block text-[10px] font-mono tracking-widest text-brass uppercase">
+                {editingCategory.id ? 'Edit Category' : 'New Category'}
+              </span>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Category Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editingCategory.name}
+                    onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                    placeholder="e.g. Laminates"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Display Order
+                  </label>
+                  <input
+                    type="number"
+                    value={editingCategory.displayOrder}
+                    onChange={(e) =>
+                      setEditingCategory({ ...editingCategory, displayOrder: Number(e.target.value) })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-3 border-t border-line/30">
+                <button
+                  onClick={() => setEditingCategory(null)}
+                  className="bg-transparent border border-line text-stone text-[9px] font-mono uppercase py-1.5 px-4 rounded-sm cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveCategory}
+                  className="bg-ember hover:bg-ember-light text-ember-text font-mono text-[9px] uppercase tracking-wider font-semibold py-1.5 px-5 rounded-sm cursor-pointer"
+                >
+                  Save Category
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-ink-2/40 border border-line rounded-sm overflow-hidden">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-line text-[8px] font-mono uppercase text-brass tracking-widest bg-black/40">
+                  <th className="p-4">Name</th>
+                  <th className="p-4">Slug</th>
+                  <th className="p-4">Order</th>
+                  <th className="p-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line/30 text-xs">
+                {categories.map((c) => (
+                  <tr key={c.id} className="hover:bg-ink-2/20">
+                    <td className="p-4 font-semibold text-parchment">{c.name}</td>
+                    <td className="p-4 font-mono text-stone-dim text-[10px]">{c.slug}</td>
+                    <td className="p-4 text-stone">{c.displayOrder}</td>
+                    <td className="p-4 text-right space-x-1.5">
+                      <button
+                        onClick={() => setEditingCategory(c)}
+                        className="inline-flex p-1.5 border border-line/60 hover:border-parchment rounded-sm cursor-pointer"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCategory(c.id)}
+                        className="inline-flex p-1.5 border border-line/60 hover:border-red-500 text-stone-dim hover:text-red-400 rounded-sm cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

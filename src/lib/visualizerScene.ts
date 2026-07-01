@@ -206,9 +206,13 @@ const allFinishes = Object.values(FINISHES).flat();
 export const defaultScene: VisualizerScene = {
   id: 'kitchen-main-scene',
   name: 'Modern Kitchen Visualiser',
+  slug: 'kitchen-main-scene',
   roomImage: '/visualizer-room.png',
   naturalWidth: 1024,
   naturalHeight: 1024,
+  status: 'PUBLISHED',
+  displayOrder: 0,
+  whereShown: ['HOMEPAGE', 'VISUALIZER'],
   overlaySettings: {
     opacity: 0.75,
   },
