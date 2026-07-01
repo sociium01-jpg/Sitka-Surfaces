@@ -114,6 +114,7 @@ export default function Footer() {
             <Link href="/privacy" className="hover:text-parchment transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-parchment transition-colors">Terms of Use</Link>
             <Link href="/sitemap" className="hover:text-parchment transition-colors">HTML Sitemap</Link>
+            <Link href="/offline-game" className="hover:text-ember transition-colors" title="Play the Plywood Stacker game — even offline!">Play Offline 🪵</Link>
             <Link href="/admin" className="hover:text-ember-light transition-colors font-semibold">Admin Panel</Link>
           </div>
         </div>

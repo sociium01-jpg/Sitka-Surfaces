@@ -18,8 +18,17 @@ type SlabProps = {
 function SculpturalSlab({ position, rotation, args, type, color = '#F5B800' }: SlabProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const [textures, setTextures] = useState<{ maps: THREE.CanvasTexture[]; normals: THREE.CanvasTexture[] } | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     // Generate high-fidelity textures and corresponding normal maps
     const faceCanvas = createProceduralTextureCanvas(1024, 1024, (ctx) => {
       if (type === 'plywood') {
@@ -77,7 +86,7 @@ function SculpturalSlab({ position, rotation, args, type, color = '#F5B800' }: S
       maps: [edgeTex, edgeTex, edgeTex, edgeTex, faceTex, faceTex],
       normals: [edgeNormalTex, edgeNormalTex, edgeNormalTex, edgeNormalTex, faceNormalTex, faceNormalTex]
     });
-  }, [type, color]);
+  }, [type, color, mounted]);
 
   if (!textures) return null;
 
@@ -152,34 +161,50 @@ function DustMotes({ count = 80 }) {
 function SceneController() {
   const groupRef = useRef<THREE.Group>(null);
   const lightRef = useRef<THREE.SpotLight>(null);
-  const { size } = useThree();
-
-  const [mouse, setMouse] = useState({ x: 0, y: 0 });
+  const mouse = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      setMouse({
+      mouse.current = {
         x: (e.clientX / window.innerWidth) * 2 - 1,
         y: -(e.clientY / window.innerHeight) * 2 + 1,
-      });
+      };
     };
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
   useFrame((state) => {
+    const time = state.clock.getElapsedTime();
+    const c = state.camera;
+    
+    // Eased intro camera pull-in (first 2.4s)
+    if (time < 2.5) {
+      c.position.setZ(THREE.MathUtils.lerp(c.position.z, 5.8, 0.04));
+    } else {
+      // Normal mouse parallax targeting position
+      const targetX = mouse.current.x * 0.8;
+      const targetY = -mouse.current.y * 0.6;
+      c.position.setX(THREE.MathUtils.lerp(c.position.x, targetX, 0.05));
+      c.position.setY(THREE.MathUtils.lerp(c.position.y, targetY, 0.05));
+      c.position.setZ(THREE.MathUtils.lerp(c.position.z, 5.8, 0.05));
+    }
+    
+    // Camera looks slightly toward center
+    c.lookAt(0, 0, 0);
+
     // Parallax group tilting
     if (groupRef.current) {
-      const targetX = mouse.x * 0.25;
-      const targetY = mouse.y * 0.2;
+      const targetX = mouse.current.x * 0.25;
+      const targetY = mouse.current.y * 0.2;
       groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetX, 0.05);
       groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, -targetY, 0.05);
     }
 
     // Interactive spotlight tracking
     if (lightRef.current) {
-      const targetLightX = mouse.x * 4.5;
-      const targetLightY = mouse.y * 3.5;
+      const targetLightX = mouse.current.x * 4.5;
+      const targetLightY = mouse.current.y * 3.5;
       lightRef.current.position.x = THREE.MathUtils.lerp(lightRef.current.position.x, targetLightX, 0.08);
       lightRef.current.position.y = THREE.MathUtils.lerp(lightRef.current.position.y, targetLightY, 0.08);
     }

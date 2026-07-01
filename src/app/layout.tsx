@@ -7,6 +7,7 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import MobileAppNav from "@/components/MobileAppNav";
 import BrochureModal from "@/components/BrochureModal";
+import SiteLoader from "@/components/SiteLoader";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -53,6 +54,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-ink text-stone">
         <ThemeProvider>
           <ModalProvider>
+            <SiteLoader />
             <Nav />
             <main className="flex-grow pb-24 min-[901px]:pb-0">
               {children}
