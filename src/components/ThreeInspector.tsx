@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { createProceduralTextureCanvas, drawWoodgrain, drawLaminate, drawPlywoodEdge } from '@/lib/textureUtils';
+import { createProceduralTextureCanvas, drawWoodgrain, drawLaminate, drawPlywoodEdge, createNormalMap } from '@/lib/textureUtils';
 
 type InspectorPanelProps = {
   materialType: 'plywood' | 'laminate';
@@ -14,10 +14,11 @@ type InspectorPanelProps = {
 
 function InspectorPanel({ materialType, color = '#F5B800', isHovered }: InspectorPanelProps) {
   const meshRef = useRef<THREE.Mesh>(null);
-  const [textures, setTextures] = useState<THREE.CanvasTexture[] | null>(null);
+  const [textures, setTextures] = useState<{ maps: THREE.CanvasTexture[]; normals: THREE.CanvasTexture[] } | null>(null);
 
   // Generate high-res procedural textures
   useEffect(() => {
+    // Diffuse Canvas Maps
     const faceCanvas = createProceduralTextureCanvas(1024, 1024, (ctx) => {
       if (materialType === 'plywood') {
         drawWoodgrain(ctx, 1024, 1024, '#E2D4BF', '#7A6850'); // Birch face veneer
@@ -35,20 +36,55 @@ function InspectorPanel({ materialType, color = '#F5B800', isHovered }: Inspecto
       }
     });
 
+    // Height Canvas Maps for generating Normals
+    const faceHeightCanvas = createProceduralTextureCanvas(1024, 1024, (ctx) => {
+      if (materialType === 'plywood') {
+        drawWoodgrain(ctx, 1024, 1024, '#E2D4BF', '#7A6850', true); // Heightmap flag true
+      } else {
+        drawLaminate(ctx, 1024, 1024, color, true); // Heightmap flag true
+      }
+    });
+
+    const edgeHeightCanvas = createProceduralTextureCanvas(256, 1024, (ctx) => {
+      if (materialType === 'plywood') {
+        drawPlywoodEdge(ctx, 256, 1024, true); // Heightmap flag true
+      } else {
+        ctx.fillStyle = '#808080';
+        ctx.fillRect(0, 0, 256, 1024);
+      }
+    });
+
+    const faceNormalCanvas = createNormalMap(faceHeightCanvas, materialType === 'laminate' ? 0.35 : 1.5);
+    const edgeNormalCanvas = createNormalMap(edgeHeightCanvas, 2.5);
+
     const faceTex = new THREE.CanvasTexture(faceCanvas);
     const edgeTex = new THREE.CanvasTexture(edgeCanvas);
+    const faceNormalTex = new THREE.CanvasTexture(faceNormalCanvas);
+    const edgeNormalTex = new THREE.CanvasTexture(edgeNormalCanvas);
     
     faceTex.colorSpace = THREE.SRGBColorSpace;
     edgeTex.colorSpace = THREE.SRGBColorSpace;
+    faceNormalTex.colorSpace = THREE.NoColorSpace;
+    edgeNormalTex.colorSpace = THREE.NoColorSpace;
 
-    setTextures([
-      edgeTex, // right
-      edgeTex, // left
-      edgeTex, // top
-      edgeTex, // bottom
-      faceTex, // front
-      faceTex, // back
-    ]);
+    setTextures({
+      maps: [
+        edgeTex, // right
+        edgeTex, // left
+        edgeTex, // top
+        edgeTex, // bottom
+        faceTex, // front
+        faceTex, // back
+      ],
+      normals: [
+        edgeNormalTex, // right
+        edgeNormalTex, // left
+        edgeNormalTex, // top
+        edgeNormalTex, // bottom
+        faceNormalTex, // front
+        faceNormalTex, // back
+      ]
+    });
   }, [materialType, color]);
 
   useFrame((state) => {
@@ -65,15 +101,17 @@ function InspectorPanel({ materialType, color = '#F5B800', isHovered }: Inspecto
   return (
     <mesh ref={meshRef} castShadow receiveShadow>
       <boxGeometry args={[2.0, 3.2, 0.08]} />
-      {textures.map((tex, idx) => (
+      {textures.maps.map((tex, idx) => (
         <meshPhysicalMaterial 
           key={idx} 
           attach={`material-${idx}`} 
           map={tex} 
-          roughness={materialType === 'laminate' ? 0.95 : 0.55}
+          normalMap={textures.normals[idx]}
+          normalScale={new THREE.Vector2(0.9, 0.9)}
+          roughness={materialType === 'laminate' ? 0.95 : 0.45}
           metalness={0.02}
-          clearcoat={materialType === 'laminate' ? 0.0 : 0.08}
-          clearcoatRoughness={0.1}
+          clearcoat={materialType === 'laminate' ? 0.0 : 0.12}
+          clearcoatRoughness={0.15}
         />
       ))}
     </mesh>
