@@ -8,7 +8,7 @@ export default function VisualizerAdmin() {
   // CMS state
   const [scenes, setScenes] = useState<VisualizerScene[]>([]);
   const [finishes, setFinishes] = useState<Finish[]>([]);
-  const [categories, setCategories] = useState<{ id: string; name: string; slug: string; displayOrder: number }[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; slug: string; displayOrder: number; defaultEdgeStyle?: string; defaultRoughness?: number; defaultMetalness?: number }[]>([]);
 
   // Selection states
   const [activeSceneIdx, setActiveSceneIdx] = useState<number>(0);
@@ -19,7 +19,14 @@ export default function VisualizerAdmin() {
 
   // Form states
   const [editingFinish, setEditingFinish] = useState<Partial<Finish> | null>(null);
-  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string; displayOrder: number } | null>(null);
+  const [editingCategory, setEditingCategory] = useState<{
+    id: string;
+    name: string;
+    displayOrder: number;
+    defaultEdgeStyle?: string;
+    defaultRoughness?: number;
+    defaultMetalness?: number;
+  } | null>(null);
 
   // Interaction logs
   const [successMsg, setSuccessMsg] = useState('');
@@ -772,6 +779,7 @@ export default function VisualizerAdmin() {
             <span className="text-[10px] font-mono tracking-widest text-brass uppercase font-semibold">
               Product Finish Swatches ({finishes.length})
             </span>
+
             <button
               onClick={() =>
                 setEditingFinish({
@@ -783,6 +791,13 @@ export default function VisualizerAdmin() {
                   tileableTexture: '',
                   materialType: 'matte',
                   tags: [],
+                  modelType: 'generated',
+                  modelAsset: '',
+                  realWidthMm: 1220,
+                  realHeightMm: 2440,
+                  realThicknessMm: 18,
+                  roughness: 0.5,
+                  metalness: 0.0,
                 })
               }
               className="bg-ember hover:bg-ember-light text-ember-text font-mono text-[9px] tracking-wider uppercase font-semibold py-2 px-4 rounded-sm flex items-center gap-1 cursor-pointer"
@@ -934,6 +949,113 @@ export default function VisualizerAdmin() {
                     className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
                     placeholder="e.g. 60"
                   />
+                 </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    3D Inspector Mode
+                  </label>
+                  <select
+                    value={editingFinish.modelType || 'generated'}
+                    onChange={(e) =>
+                      setEditingFinish({ ...editingFinish, modelType: e.target.value as any })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                  >
+                    <option value="generated">Path B: Auto-generate from flat swatch</option>
+                    <option value="uploadedModel">Path A: Uploaded GLB/GLTF model</option>
+                  </select>
+                </div>
+                {editingFinish.modelType === 'uploadedModel' && (
+                  <div>
+                    <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                      Uploaded GLB/GLTF File URL
+                    </label>
+                    <input
+                      type="text"
+                      value={editingFinish.modelAsset || ''}
+                      onChange={(e) =>
+                        setEditingFinish({ ...editingFinish, modelAsset: e.target.value })
+                      }
+                      className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                      placeholder="e.g. /models/birch-board.glb"
+                    />
+                  </div>
+                )}
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Real Width (mm)
+                  </label>
+                  <input
+                    type="number"
+                    value={editingFinish.realWidthMm || ''}
+                    onChange={(e) =>
+                      setEditingFinish({ ...editingFinish, realWidthMm: Number(e.target.value) })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                    placeholder="e.g. 1220"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Real Height (mm)
+                  </label>
+                  <input
+                    type="number"
+                    value={editingFinish.realHeightMm || ''}
+                    onChange={(e) =>
+                      setEditingFinish({ ...editingFinish, realHeightMm: Number(e.target.value) })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                    placeholder="e.g. 2440"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Real Thickness (mm)
+                  </label>
+                  <input
+                    type="number"
+                    value={editingFinish.realThicknessMm || ''}
+                    onChange={(e) =>
+                      setEditingFinish({ ...editingFinish, realThicknessMm: Number(e.target.value) })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                    placeholder="e.g. 18"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Roughness Override (0.0 - 1.0)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0"
+                    max="1"
+                    value={editingFinish.roughness !== undefined ? editingFinish.roughness : ''}
+                    onChange={(e) =>
+                      setEditingFinish({ ...editingFinish, roughness: Number(e.target.value) })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                    placeholder="Category default"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Metalness Override (0.0 - 1.0)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0"
+                    max="1"
+                    value={editingFinish.metalness !== undefined ? editingFinish.metalness : ''}
+                    onChange={(e) =>
+                      setEditingFinish({ ...editingFinish, metalness: Number(e.target.value) })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                    placeholder="Category default"
+                  />
                 </div>
               </div>
 
@@ -1019,7 +1141,7 @@ export default function VisualizerAdmin() {
               Material Categories ({categories.length})
             </span>
             <button
-              onClick={() => setEditingCategory({ id: '', name: '', displayOrder: categories.length })}
+              onClick={() => setEditingCategory({ id: '', name: '', displayOrder: categories.length, defaultEdgeStyle: 'flatSolid', defaultRoughness: 0.5, defaultMetalness: 0.0 })}
               className="bg-ember hover:bg-ember-light text-ember-text font-mono text-[9px] tracking-wider uppercase font-semibold py-2 px-4 rounded-sm flex items-center gap-1 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> Add Category
@@ -1053,6 +1175,54 @@ export default function VisualizerAdmin() {
                     value={editingCategory.displayOrder}
                     onChange={(e) =>
                       setEditingCategory({ ...editingCategory, displayOrder: Number(e.target.value) })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Default Edge Style
+                  </label>
+                  <select
+                    value={editingCategory.defaultEdgeStyle || 'flatSolid'}
+                    onChange={(e) =>
+                      setEditingCategory({ ...editingCategory, defaultEdgeStyle: e.target.value })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                  >
+                    <option value="flatSolid">Flat Solid Edge</option>
+                    <option value="layeredPly">Layered Plywood Core Stripe</option>
+                    <option value="custom">Custom Pattern Strip</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Default Roughness (0.0 - 1.0)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0"
+                    max="1"
+                    value={editingCategory.defaultRoughness !== undefined ? editingCategory.defaultRoughness : 0.5}
+                    onChange={(e) =>
+                      setEditingCategory({ ...editingCategory, defaultRoughness: Number(e.target.value) })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Default Metalness (0.0 - 1.0)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0"
+                    max="1"
+                    value={editingCategory.defaultMetalness !== undefined ? editingCategory.defaultMetalness : 0.0}
+                    onChange={(e) =>
+                      setEditingCategory({ ...editingCategory, defaultMetalness: Number(e.target.value) })
                     }
                     className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
                   />

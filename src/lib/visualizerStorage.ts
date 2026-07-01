@@ -8,7 +8,15 @@ const STORAGE_PATH = path.join(process.cwd(), 'src/lib/visualizerDb.json');
 // Interface matching DB schema structure for JSON storage
 interface VisualizerJSONDb {
   scenes: VisualizerScene[];
-  categories: { id: string; name: string; slug: string; displayOrder: number }[];
+  categories: {
+    id: string;
+    name: string;
+    slug: string;
+    displayOrder: number;
+    defaultEdgeStyle?: string;
+    defaultRoughness?: number;
+    defaultMetalness?: number;
+  }[];
   finishes: Finish[];
 }
 
@@ -20,6 +28,9 @@ const getDefaultDbData = (): VisualizerJSONDb => {
     name: catName,
     slug: catName.toLowerCase(),
     displayOrder: idx,
+    defaultEdgeStyle: catName.toLowerCase() === 'plywood' ? 'layeredPly' : 'flatSolid',
+    defaultRoughness: 0.5,
+    defaultMetalness: 0.0,
   }));
 
   return {

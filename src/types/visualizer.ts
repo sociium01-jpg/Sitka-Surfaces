@@ -16,6 +16,15 @@ export interface Finish {
   };
   materialType: 'matte' | 'gloss' | 'satin' | 'wood' | 'stone';
   tags: string[];
+  modelType?: 'generated' | 'uploadedModel';
+  modelAsset?: string;
+  autoNormalMap?: string;
+  realWidthMm?: number;
+  realHeightMm?: number;
+  realThicknessMm?: number;
+  roughness?: number;
+  metalness?: number;
+  edgeStyle?: 'layeredPly' | 'flatSolid' | 'custom';
 }
 
 export interface VisualizerZone {

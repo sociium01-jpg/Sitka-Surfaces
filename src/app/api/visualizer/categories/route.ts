@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, displayOrder } = body;
+    const { name, displayOrder, defaultEdgeStyle, defaultRoughness, defaultMetalness } = body;
 
     if (!name) {
       return NextResponse.json({ error: 'Category name is required' }, { status: 400 });
@@ -61,7 +61,10 @@ export async function POST(req: NextRequest) {
         id: `cat-${Date.now()}`,
         name,
         slug,
-        displayOrder: displayOrder || 0
+        displayOrder: displayOrder || 0,
+        defaultEdgeStyle: defaultEdgeStyle || 'flatSolid',
+        defaultRoughness: defaultRoughness !== undefined ? defaultRoughness : 0.5,
+        defaultMetalness: defaultMetalness !== undefined ? defaultMetalness : 0.0,
       };
 
       db.categories.push(newCategory);
@@ -73,7 +76,10 @@ export async function POST(req: NextRequest) {
       data: {
         name,
         slug,
-        displayOrder: displayOrder || 0
+        displayOrder: displayOrder || 0,
+        defaultEdgeStyle: defaultEdgeStyle || 'flatSolid',
+        defaultRoughness: defaultRoughness !== undefined ? defaultRoughness : 0.5,
+        defaultMetalness: defaultMetalness !== undefined ? defaultMetalness : 0.0,
       }
     });
 
@@ -91,7 +97,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { id, name, displayOrder } = body;
+    const { id, name, displayOrder, defaultEdgeStyle, defaultRoughness, defaultMetalness } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Category ID is required' }, { status: 400 });
@@ -111,6 +117,9 @@ export async function PUT(req: NextRequest) {
         name: name !== undefined ? name : db.categories[idx].name,
         slug: name !== undefined ? name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : db.categories[idx].slug,
         displayOrder: displayOrder !== undefined ? displayOrder : db.categories[idx].displayOrder,
+        defaultEdgeStyle: defaultEdgeStyle !== undefined ? defaultEdgeStyle : db.categories[idx].defaultEdgeStyle,
+        defaultRoughness: defaultRoughness !== undefined ? defaultRoughness : db.categories[idx].defaultRoughness,
+        defaultMetalness: defaultMetalness !== undefined ? defaultMetalness : db.categories[idx].defaultMetalness,
       };
 
       db.categories[idx] = updatedCategory;
@@ -124,6 +133,9 @@ export async function PUT(req: NextRequest) {
       data.slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     }
     if (displayOrder !== undefined) data.displayOrder = displayOrder;
+    if (defaultEdgeStyle !== undefined) data.defaultEdgeStyle = defaultEdgeStyle;
+    if (defaultRoughness !== undefined) data.defaultRoughness = defaultRoughness;
+    if (defaultMetalness !== undefined) data.defaultMetalness = defaultMetalness;
 
     const category = await prisma.finishCategory.update({
       where: { id },

@@ -122,13 +122,16 @@ model VisualizerZone {
 }
 
 model FinishCategory {
-  id           String   @id @default(uuid())
-  name         String
-  slug         String   @unique
-  displayOrder Int      @default(0)
-  finishes     Finish[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id               String   @id @default(uuid())
+  name             String
+  slug             String   @unique
+  displayOrder     Int      @default(0)
+  defaultEdgeStyle String   @default("flatSolid") // "layeredPly" | "flatSolid" | "custom"
+  defaultRoughness Float    @default(0.5)
+  defaultMetalness Float    @default(0.0)
+  finishes         Finish[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model Finish {
@@ -147,6 +150,14 @@ model Finish {
   color           String?
   tileWidthCm     Float?
   tileHeightCm    Float?
+  modelType       String          @default("generated") // "generated" | "uploadedModel"
+  modelAsset      String?
+  autoNormalMap   String?
+  realWidthMm     Float?          @default(1220)
+  realHeightMm    Float?          @default(2440)
+  realThicknessMm Float?          @default(18)
+  roughness       Float?
+  metalness       Float?
   defaultZones    VisualizerZone[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt

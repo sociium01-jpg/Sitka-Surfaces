@@ -49,7 +49,16 @@ export async function GET(req: NextRequest) {
       color: f.color ?? undefined,
       pbrMaps: f.pbrMaps ? JSON.parse(f.pbrMaps) : undefined,
       materialType: f.materialType as any,
-      tags: JSON.parse(f.tags || '[]')
+      tags: JSON.parse(f.tags || '[]'),
+      modelType: f.modelType as any,
+      modelAsset: f.modelAsset ?? undefined,
+      autoNormalMap: f.autoNormalMap ?? undefined,
+      realWidthMm: f.realWidthMm ?? undefined,
+      realHeightMm: f.realHeightMm ?? undefined,
+      realThicknessMm: f.realThicknessMm ?? undefined,
+      roughness: f.roughness ?? undefined,
+      metalness: f.metalness ?? undefined,
+      edgeStyle: f.category.defaultEdgeStyle as any, // inherits from category
     }));
 
     return NextResponse.json({ success: true, finishes });
@@ -66,7 +75,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, sku, specLine, category, thumbnailImage, tileableTexture, tileWidthCm, tileHeightCm, color, pbrMaps, materialType, tags, status } = body;
+    const { name, sku, specLine, category, thumbnailImage, tileableTexture, tileWidthCm, tileHeightCm, color, pbrMaps, materialType, tags, status, modelType, modelAsset, autoNormalMap, realWidthMm, realHeightMm, realThicknessMm, roughness, metalness, edgeStyle } = body;
 
     if (!name || !sku || !category) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -90,6 +99,15 @@ export async function POST(req: NextRequest) {
         pbrMaps: pbrMaps || undefined,
         materialType: materialType || 'matte',
         tags: tags || [],
+        modelType: modelType || 'generated',
+        modelAsset: modelAsset || undefined,
+        autoNormalMap: autoNormalMap || undefined,
+        realWidthMm: realWidthMm || 1220,
+        realHeightMm: realHeightMm || 2440,
+        realThicknessMm: realThicknessMm || 18,
+        roughness: roughness || undefined,
+        metalness: metalness || undefined,
+        edgeStyle: edgeStyle || undefined,
       };
 
       db.finishes.push(newFinish);
@@ -125,6 +143,14 @@ export async function POST(req: NextRequest) {
         color: color || null,
         tileWidthCm: tileWidthCm || null,
         tileHeightCm: tileHeightCm || null,
+        modelType: modelType || 'generated',
+        modelAsset: modelAsset || null,
+        autoNormalMap: autoNormalMap || null,
+        realWidthMm: realWidthMm || 1220,
+        realHeightMm: realHeightMm || 2440,
+        realThicknessMm: realThicknessMm || 18,
+        roughness: roughness !== undefined ? roughness : null,
+        metalness: metalness !== undefined ? metalness : null,
       }
     });
 
@@ -142,7 +168,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { id, name, sku, specLine, category, thumbnailImage, tileableTexture, tileWidthCm, tileHeightCm, color, pbrMaps, materialType, tags, status } = body;
+    const { id, name, sku, specLine, category, thumbnailImage, tileableTexture, tileWidthCm, tileHeightCm, color, pbrMaps, materialType, tags, status, modelType, modelAsset, autoNormalMap, realWidthMm, realHeightMm, realThicknessMm, roughness, metalness, edgeStyle } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Finish ID is required' }, { status: 400 });
@@ -171,6 +197,15 @@ export async function PUT(req: NextRequest) {
         pbrMaps: pbrMaps !== undefined ? pbrMaps : db.finishes[idx].pbrMaps,
         materialType: materialType !== undefined ? materialType : db.finishes[idx].materialType,
         tags: tags !== undefined ? tags : db.finishes[idx].tags,
+        modelType: modelType !== undefined ? modelType : db.finishes[idx].modelType,
+        modelAsset: modelAsset !== undefined ? modelAsset : db.finishes[idx].modelAsset,
+        autoNormalMap: autoNormalMap !== undefined ? autoNormalMap : db.finishes[idx].autoNormalMap,
+        realWidthMm: realWidthMm !== undefined ? realWidthMm : db.finishes[idx].realWidthMm,
+        realHeightMm: realHeightMm !== undefined ? realHeightMm : db.finishes[idx].realHeightMm,
+        realThicknessMm: realThicknessMm !== undefined ? realThicknessMm : db.finishes[idx].realThicknessMm,
+        roughness: roughness !== undefined ? roughness : db.finishes[idx].roughness,
+        metalness: metalness !== undefined ? metalness : db.finishes[idx].metalness,
+        edgeStyle: edgeStyle !== undefined ? edgeStyle : db.finishes[idx].edgeStyle,
       };
 
       db.finishes[idx] = updatedFinish;
@@ -191,6 +226,14 @@ export async function PUT(req: NextRequest) {
     if (materialType) data.materialType = materialType;
     if (tags) data.tags = JSON.stringify(tags);
     if (status) data.status = status;
+    if (modelType) data.modelType = modelType;
+    if (modelAsset !== undefined) data.modelAsset = modelAsset;
+    if (autoNormalMap !== undefined) data.autoNormalMap = autoNormalMap;
+    if (realWidthMm !== undefined) data.realWidthMm = realWidthMm;
+    if (realHeightMm !== undefined) data.realHeightMm = realHeightMm;
+    if (realThicknessMm !== undefined) data.realThicknessMm = realThicknessMm;
+    if (roughness !== undefined) data.roughness = roughness;
+    if (metalness !== undefined) data.metalness = metalness;
 
     if (category) {
       let cat = await prisma.finishCategory.findFirst({
