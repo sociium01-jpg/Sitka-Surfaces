@@ -11,7 +11,7 @@ type MenuItem = {
 
 export default function MenuEditor() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([
-    { id: '1', name: 'Surfaces', href: '/surfaces/plywood' },
+    { id: '1', name: 'Surfaces', href: '/surfaces' },
     { id: '2', name: 'Inspiration', href: '/inspiration' },
     { id: '3', name: 'About', href: '/about' },
     { id: '4', name: 'Journal', href: '/journal' },

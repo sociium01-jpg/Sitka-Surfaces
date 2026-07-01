@@ -12,7 +12,7 @@ export default function MobileAppNav() {
 
   const appLinks = [
     { name: 'Home', href: '/', icon: Home },
-    { name: 'Surfaces', href: '/surfaces/plywood', icon: Layers, matchPattern: /^\/surfaces/ },
+    { name: 'Surfaces', href: '/surfaces', icon: Layers, matchPattern: /^\/surfaces/ },
     { name: 'Inspire', href: '/inspiration', icon: Compass },
     { name: 'Journal', href: '/journal', icon: BookOpen },
   ];
