@@ -129,6 +129,10 @@ model FinishCategory {
   defaultEdgeStyle String   @default("flatSolid") // "layeredPly" | "flatSolid" | "custom"
   defaultRoughness Float    @default(0.5)
   defaultMetalness Float    @default(0.0)
+  deckImage        String?
+  tagline          String?
+  description      String?
+  metaLine         String?
   finishes         Finish[]
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

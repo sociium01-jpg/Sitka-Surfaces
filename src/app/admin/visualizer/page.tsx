@@ -26,6 +26,10 @@ export default function VisualizerAdmin() {
     defaultEdgeStyle?: string;
     defaultRoughness?: number;
     defaultMetalness?: number;
+    deckImage?: string | null;
+    tagline?: string | null;
+    description?: string | null;
+    metaLine?: string | null;
   } | null>(null);
 
   // Interaction logs
@@ -1141,7 +1145,7 @@ export default function VisualizerAdmin() {
               Material Categories ({categories.length})
             </span>
             <button
-              onClick={() => setEditingCategory({ id: '', name: '', displayOrder: categories.length, defaultEdgeStyle: 'flatSolid', defaultRoughness: 0.5, defaultMetalness: 0.0 })}
+              onClick={() => setEditingCategory({ id: '', name: '', displayOrder: categories.length, defaultEdgeStyle: 'flatSolid', defaultRoughness: 0.5, defaultMetalness: 0.0, deckImage: '', tagline: '', description: '', metaLine: '' })}
               className="bg-ember hover:bg-ember-light text-ember-text font-mono text-[9px] tracking-wider uppercase font-semibold py-2 px-4 rounded-sm flex items-center gap-1 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> Add Category
@@ -1225,6 +1229,62 @@ export default function VisualizerAdmin() {
                       setEditingCategory({ ...editingCategory, defaultMetalness: Number(e.target.value) })
                     }
                     className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Homepage Deck Image URL
+                  </label>
+                  <input
+                    type="text"
+                    value={editingCategory.deckImage || ''}
+                    onChange={(e) =>
+                      setEditingCategory({ ...editingCategory, deckImage: e.target.value })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                    placeholder="e.g. /images/plywood-deck.jpg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Homepage Deck Tagline
+                  </label>
+                  <input
+                    type="text"
+                    value={editingCategory.tagline || ''}
+                    onChange={(e) =>
+                      setEditingCategory({ ...editingCategory, tagline: e.target.value })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                    placeholder="e.g. The structure underneath the beauty."
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Homepage Deck Description
+                  </label>
+                  <input
+                    type="text"
+                    value={editingCategory.description || ''}
+                    onChange={(e) =>
+                      setEditingCategory({ ...editingCategory, description: e.target.value })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                    placeholder="e.g. Engineered core panels built for strength..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                    Homepage Deck Meta Line
+                  </label>
+                  <input
+                    type="text"
+                    value={editingCategory.metaLine || ''}
+                    onChange={(e) =>
+                      setEditingCategory({ ...editingCategory, metaLine: e.target.value })
+                    }
+                    className="w-full bg-ink border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                    placeholder="e.g. 8 grades · MR → Marine"
                   />
                 </div>
               </div>

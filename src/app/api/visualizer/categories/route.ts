@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, displayOrder, defaultEdgeStyle, defaultRoughness, defaultMetalness } = body;
+    const { name, displayOrder, defaultEdgeStyle, defaultRoughness, defaultMetalness, deckImage, tagline, description, metaLine } = body;
 
     if (!name) {
       return NextResponse.json({ error: 'Category name is required' }, { status: 400 });
@@ -65,6 +65,10 @@ export async function POST(req: NextRequest) {
         defaultEdgeStyle: defaultEdgeStyle || 'flatSolid',
         defaultRoughness: defaultRoughness !== undefined ? defaultRoughness : 0.5,
         defaultMetalness: defaultMetalness !== undefined ? defaultMetalness : 0.0,
+        deckImage: deckImage || null,
+        tagline: tagline || null,
+        description: description || null,
+        metaLine: metaLine || null,
       };
 
       db.categories.push(newCategory);
@@ -80,6 +84,10 @@ export async function POST(req: NextRequest) {
         defaultEdgeStyle: defaultEdgeStyle || 'flatSolid',
         defaultRoughness: defaultRoughness !== undefined ? defaultRoughness : 0.5,
         defaultMetalness: defaultMetalness !== undefined ? defaultMetalness : 0.0,
+        deckImage: deckImage || null,
+        tagline: tagline || null,
+        description: description || null,
+        metaLine: metaLine || null,
       }
     });
 
@@ -97,7 +105,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { id, name, displayOrder, defaultEdgeStyle, defaultRoughness, defaultMetalness } = body;
+    const { id, name, displayOrder, defaultEdgeStyle, defaultRoughness, defaultMetalness, deckImage, tagline, description, metaLine } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Category ID is required' }, { status: 400 });
@@ -120,6 +128,10 @@ export async function PUT(req: NextRequest) {
         defaultEdgeStyle: defaultEdgeStyle !== undefined ? defaultEdgeStyle : db.categories[idx].defaultEdgeStyle,
         defaultRoughness: defaultRoughness !== undefined ? defaultRoughness : db.categories[idx].defaultRoughness,
         defaultMetalness: defaultMetalness !== undefined ? defaultMetalness : db.categories[idx].defaultMetalness,
+        deckImage: deckImage !== undefined ? deckImage : db.categories[idx].deckImage,
+        tagline: tagline !== undefined ? tagline : db.categories[idx].tagline,
+        description: description !== undefined ? description : db.categories[idx].description,
+        metaLine: metaLine !== undefined ? metaLine : db.categories[idx].metaLine,
       };
 
       db.categories[idx] = updatedCategory;
@@ -136,6 +148,10 @@ export async function PUT(req: NextRequest) {
     if (defaultEdgeStyle !== undefined) data.defaultEdgeStyle = defaultEdgeStyle;
     if (defaultRoughness !== undefined) data.defaultRoughness = defaultRoughness;
     if (defaultMetalness !== undefined) data.defaultMetalness = defaultMetalness;
+    if (deckImage !== undefined) data.deckImage = deckImage;
+    if (tagline !== undefined) data.tagline = tagline;
+    if (description !== undefined) data.description = description;
+    if (metaLine !== undefined) data.metaLine = metaLine;
 
     const category = await prisma.finishCategory.update({
       where: { id },
