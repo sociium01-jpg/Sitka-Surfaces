@@ -11,7 +11,7 @@ import Counter from '@/components/Counter';
 import LaminateToWoodButton from '@/components/LaminateToWoodButton';
 import dynamic from 'next/dynamic';
 
-const ThreeHero = dynamic(() => import('@/components/ThreeHero'), { ssr: false });
+const Hero3D = dynamic(() => import('@/components/Hero3D'), { ssr: false });
 const ThreeInspector = dynamic(() => import('@/components/ThreeInspector'), { ssr: false });
 const Visualizer = dynamic(() => import('@/components/Visualizer'), { ssr: false });
 
@@ -128,7 +128,7 @@ export default function Home() {
     <div className="w-full">
       {/* 1. HERO SECTION */}
       <section className="relative min-h-screen flex flex-col justify-center py-32 md:py-40 overflow-hidden bg-ink">
-        <ThreeHero />
+        <Hero3D />
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-ink/75 pointer-events-none z-1" />
 
         <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10 w-full space-y-6">
