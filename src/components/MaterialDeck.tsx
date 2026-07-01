@@ -22,7 +22,7 @@ export default function MaterialDeck() {
       title: 'Plywood',
       tagline: 'The structure underneath the beauty.',
       desc: 'Engineered core panels built for strength, screw-holding, and dead-flat lamination.',
-      imgUrl: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&w=1000&q=80',
+      imgUrl: 'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&w=1000&q=80', // High-contrast stacked raw wood layers
       href: '/surfaces/plywood',
     },
     {
@@ -30,7 +30,7 @@ export default function MaterialDeck() {
       title: 'Laminates',
       tagline: 'Built for the surfaces that get touched the most.',
       desc: 'High-pressure laminates in matte, gloss, and textured finishes that shrug off scratches and daily wear.',
-      imgUrl: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1000&q=80',
+      imgUrl: 'https://images.unsplash.com/photo-1618219908412-a29a1bb7b86e?auto=format&fit=crop&w=1000&q=80', // Vibrant light oak custom laminates scene
       href: '/surfaces/laminates',
     },
     {
@@ -38,7 +38,7 @@ export default function MaterialDeck() {
       title: 'Veneer',
       tagline: 'Real wood, cut thin, made honest.',
       desc: 'Natural wood veneers sliced for grain-true consistency — the character of solid timber, without the cost.',
-      imgUrl: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=1000&q=80',
+      imgUrl: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=1000&q=80', // Rich teak veneer grain
       href: '/surfaces/veneer',
     },
     {
@@ -46,7 +46,7 @@ export default function MaterialDeck() {
       title: 'Decoratives',
       tagline: 'The detail that makes a space feel finished.',
       desc: 'Decorative surfaces, edgebanding, and specialty panels for the details that need more than a flat finish.',
-      imgUrl: 'https://images.unsplash.com/photo-1618219908412-a29a1bb7b86e?auto=format&fit=crop&w=1000&q=80',
+      imgUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1000&q=80', // Ribbed acoustic slats feature wall
       href: '/surfaces/decoratives',
     },
   ];
@@ -77,8 +77,8 @@ export default function MaterialDeck() {
                 className="absolute inset-0 bg-cover bg-center transition-all duration-500 transform scale-105 group-hover:scale-100"
                 style={{ 
                   backgroundImage: `url(${card.imgUrl})`,
-                  opacity: isActive ? 0.45 : 0.25,
-                  filter: isActive ? 'saturate(0.8) brightness(0.6)' : 'saturate(0.5) brightness(0.4)'
+                  opacity: isActive ? 0.75 : 0.35,
+                  filter: isActive ? 'saturate(1.15) brightness(0.85)' : 'saturate(0.65) brightness(0.55)'
                 }}
               />
               
