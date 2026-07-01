@@ -1,11 +1,10 @@
 import fs from 'fs';
 import path from 'path';
-import { VisualizerScene, VisualizerZone, Finish } from '@/types/visualizer';
+import { VisualizerScene, VisualizerZone, Finish, HubPageSectionConfig, FAQ, ComparisonMatrix } from '@/types/visualizer';
 import { defaultScene, FINISHES } from '@/lib/visualizerScene';
 
 const STORAGE_PATH = path.join(process.cwd(), 'src/lib/visualizerDb.json');
 
-// Interface matching DB schema structure for JSON storage
 interface VisualizerJSONDb {
   scenes: VisualizerScene[];
   categories: {
@@ -22,9 +21,11 @@ interface VisualizerJSONDb {
     metaLine?: string | null;
   }[];
   finishes: Finish[];
+  hubConfigs: HubPageSectionConfig[];
+  faqs: FAQ[];
+  matrices: ComparisonMatrix[];
 }
 
-// Initial default data if file is missing
 const getDefaultDbData = (): VisualizerJSONDb => {
   const initialFinishes: Finish[] = Object.values(FINISHES).flat();
   const deckMetadata: Record<string, { tagline: string; description: string; metaLine: string; image: string }> = {
@@ -77,10 +78,96 @@ const getDefaultDbData = (): VisualizerJSONDb => {
     };
   });
 
+  // Hub outlines config defaults
+  const initialHubConfigs: HubPageSectionConfig[] = ['plywood', 'laminates', 'veneer', 'decoratives'].map((vertical) => ({
+    id: `config-${vertical}`,
+    category: vertical,
+    sectionOrder: ['swatches', 'catalogue', 'matrix', 'faqs'],
+    visibility: { swatches: true, catalogue: true, matrix: true, faqs: true },
+  }));
+
+  // Initial FAQs
+  const initialFaqs: FAQ[] = [
+    {
+      id: 'faq-ply-1',
+      category: 'plywood',
+      question: 'What is the difference between MR and BWR grade plywood?',
+      answer: 'MR (Moisture Resistant) plywood handles everyday indoor humidity; BWR (Boiling Water Resistant) is tested for prolonged hot water contact, making it standard for kitchen cabinets.',
+      displayOrder: 1,
+    },
+    {
+      id: 'faq-ply-2',
+      category: 'plywood',
+      question: 'Can Sitka Plywood be used for exterior facades?',
+      answer: 'Yes — our Marine Grade IS 710 range is manufactured with specialized phenolic adhesives specifically for continuous outdoor facades.',
+      displayOrder: 2,
+    },
+    {
+      id: 'faq-lam-1',
+      category: 'laminates',
+      question: 'What is compact laminate?',
+      answer: 'Compact laminate is a self-supporting solid sheet (usually 6mm to 18mm thickness) pressed under high heat and pressure, requiring no plywood substrate. Perfect for washroom cubicles and modern countertops.',
+      displayOrder: 1,
+    },
+    {
+      id: 'faq-lam-2',
+      category: 'laminates',
+      question: 'Do gloss finishes show fingerprints?',
+      answer: 'Yes, gloss reflects direct light. For high-touch areas, we recommend choosing our Matte or Anti-Fingerprint options.',
+      displayOrder: 2,
+    },
+  ];
+
+  // Initial Comparison Matrices
+  const initialMatrices: ComparisonMatrix[] = [
+    {
+      id: 'matrix-plywood',
+      category: 'plywood',
+      columns: [
+        { fieldKey: 'grade', label: 'Grade' },
+        { fieldKey: 'thickness', label: 'Thickness Range' },
+        { fieldKey: 'waterResistance', label: 'Water Resistance' },
+        { fieldKey: 'idealUse', label: 'Ideal Use' },
+        { fieldKey: 'emission', label: 'Emission Level' },
+      ],
+      rows: [
+        {
+          productId: 'bwr-grade',
+          productName: 'BWR Grade Corewood',
+          values: {
+            grade: 'BWR (IS 303)',
+            thickness: '6mm - 25mm',
+            waterResistance: 'Boiling Water Resistant (72 hrs)',
+            idealUse: 'Kitchen Cabinets, Wardrobes',
+            emission: 'E1 Certified',
+          },
+        },
+        {
+          productId: 'marine-grade',
+          productName: 'Marine Grade IS 710',
+          values: {
+            grade: 'Marine (IS 710)',
+            thickness: '9mm - 19mm',
+            waterResistance: 'Boiling Water Proof (100 hrs)',
+            idealUse: 'External Cladding, Wet Areas',
+            emission: 'E0 Certified',
+          },
+        },
+      ],
+      sourceDocumentName: 'Plywood_Specs_Sheet.xlsx',
+      sourceDocumentFormat: 'xlsx',
+      version: 1,
+      status: 'published',
+    },
+  ];
+
   return {
     scenes: [defaultScene],
     categories: initialCategories,
     finishes: initialFinishes,
+    hubConfigs: initialHubConfigs,
+    faqs: initialFaqs,
+    matrices: initialMatrices,
   };
 };
 
@@ -92,7 +179,14 @@ export function readVisualizerDb(): VisualizerJSONDb {
       return defaultData;
     }
     const raw = fs.readFileSync(STORAGE_PATH, 'utf-8');
-    return JSON.parse(raw);
+    const data = JSON.parse(raw);
+    
+    // Ensure new properties exist for backwards compatibility
+    if (!data.hubConfigs) data.hubConfigs = [];
+    if (!data.faqs) data.faqs = [];
+    if (!data.matrices) data.matrices = [];
+    
+    return data;
   } catch (err) {
     console.error('Error reading visualizer storage file, using defaults', err);
     return getDefaultDbData();

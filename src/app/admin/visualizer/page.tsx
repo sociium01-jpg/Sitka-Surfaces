@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Plus, Trash2, Edit2, Sliders, Check, Settings, Copy, Image as ImageIcon } from 'lucide-react';
+import { Save, Plus, Trash2, Edit2, Sliders, Check, Settings, Copy, Image as ImageIcon, ArrowUp, ArrowDown, Upload, AlertTriangle, CheckCircle } from 'lucide-react';
 import { VisualizerScene, VisualizerZone, Finish } from '@/types/visualizer';
 
 export default function VisualizerAdmin() {
@@ -15,7 +15,7 @@ export default function VisualizerAdmin() {
   const [activeZoneId, setActiveZoneId] = useState<string | null>(null);
 
   // Tab views
-  const [activeTab, setActiveTab] = useState<'scenes' | 'finishes' | 'categories'>('scenes');
+  const [activeTab, setActiveTab] = useState<'scenes' | 'finishes' | 'categories' | 'hubs'>('scenes');
 
   // Form states
   const [editingFinish, setEditingFinish] = useState<Partial<Finish> | null>(null);
@@ -36,6 +36,15 @@ export default function VisualizerAdmin() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Hubs page config states
+  const [hubConfigs, setHubConfigs] = useState<any[]>([]);
+  const [faqs, setFaqs] = useState<any[]>([]);
+  const [currentMatrix, setCurrentMatrix] = useState<any | null>(null);
+  const [activeHubCategory, setActiveHubCategory] = useState<string>('plywood');
+  const [editingFaq, setEditingFaq] = useState<any | null>(null);
+  const [uploadingMatrix, setUploadingMatrix] = useState<boolean>(false);
+  const [unconfirmedLowConfidenceCells, setUnconfirmedLowConfidenceCells] = useState<string[]>([]);
 
   // Canvas references for dragging corner points
   const imgContainerRef = useRef<HTMLDivElement>(null);
@@ -66,6 +75,198 @@ export default function VisualizerAdmin() {
     }
     loadCMSData();
   }, []);
+
+  // Load hubs configuration, FAQs, and Comparison Matrix for selected category
+  useEffect(() => {
+    if (activeTab !== 'hubs') return;
+    async function loadHubCMSData() {
+      try {
+        const [configRes, faqsRes, matrixRes] = await Promise.all([
+          fetch(`/api/visualizer/hub-configs?category=${activeHubCategory}`),
+          fetch(`/api/visualizer/faqs?category=${activeHubCategory}`),
+          fetch(`/api/visualizer/matrix?category=${activeHubCategory}`),
+        ]);
+
+        const [configData, faqsData, matrixData] = await Promise.all([
+          configRes.json(),
+          faqsRes.json(),
+          matrixRes.json(),
+        ]);
+
+        if (configData.success && configData.config) {
+          setHubConfigs([configData.config]);
+        }
+        if (faqsData.success) {
+          setFaqs(faqsData.faqs);
+        }
+        if (matrixData.success) {
+          setCurrentMatrix(matrixData.matrix);
+          // Auto-load low-confidence cells into confirmation queue
+          if (matrixData.matrix && matrixData.matrix.extractionConfidence) {
+            const lowCells: string[] = [];
+            Object.entries(matrixData.matrix.extractionConfidence).forEach(([cellRef, score]: any) => {
+              if (score < 0.8) {
+                lowCells.push(cellRef);
+              }
+            });
+            setUnconfirmedLowConfidenceCells(lowCells);
+          } else {
+            setUnconfirmedLowConfidenceCells([]);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading hubs config data:', err);
+      }
+    }
+    loadHubCMSData();
+  }, [activeHubCategory, activeTab]);
+
+  // Save Outline configurations to API
+  const handleSaveOutlineConfig = async (configToSave: any) => {
+    setSaving(true);
+    setSuccessMsg('');
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/visualizer/hub-configs', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(configToSave),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setHubConfigs([data.config]);
+        setSuccessMsg('Section order & visibility outlines updated successfully.');
+        setTimeout(() => setSuccessMsg(''), 4000);
+      } else {
+        setErrorMsg(data.error || 'Failed to update section order.');
+      }
+    } catch {
+      setErrorMsg('Failed to connect to section config endpoint.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // FAQ operations
+  const handleSaveFaq = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingFaq?.question || !editingFaq?.answer) return;
+    setSaving(true);
+    setSuccessMsg('');
+    setErrorMsg('');
+    try {
+      const method = editingFaq.id ? 'PUT' : 'POST';
+      const res = await fetch('/api/visualizer/faqs', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...editingFaq, category: activeHubCategory }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (method === 'POST') {
+          setFaqs([...faqs, data.faq]);
+        } else {
+          setFaqs(faqs.map((f) => (f.id === data.faq.id ? data.faq : f)));
+        }
+        setEditingFaq(null);
+        setSuccessMsg('FAQ item saved successfully.');
+        setTimeout(() => setSuccessMsg(''), 4000);
+      } else {
+        setErrorMsg(data.error || 'Failed to save FAQ.');
+      }
+    } catch {
+      setErrorMsg('Error saving FAQ item.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteFaq = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this FAQ?')) return;
+    setSuccessMsg('');
+    setErrorMsg('');
+    try {
+      const res = await fetch(`/api/visualizer/faqs?id=${id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFaqs(faqs.filter((f) => f.id !== id));
+        setSuccessMsg('FAQ item deleted.');
+        setTimeout(() => setSuccessMsg(''), 3000);
+      }
+    } catch {
+      setErrorMsg('Failed to delete FAQ item.');
+    }
+  };
+
+  // Matrix actions
+  const handleUploadMatrix = async (file: File) => {
+    setUploadingMatrix(true);
+    setSuccessMsg('');
+    setErrorMsg('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', activeHubCategory);
+      
+      const res = await fetch('/api/visualizer/matrix', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCurrentMatrix(data.matrix);
+        // Queue low-confidence cells
+        const lowCells: string[] = [];
+        if (data.matrix.extractionConfidence) {
+          Object.entries(data.matrix.extractionConfidence).forEach(([cellRef, score]: any) => {
+            if (score < 0.8) {
+              lowCells.push(cellRef);
+            }
+          });
+        }
+        setUnconfirmedLowConfidenceCells(lowCells);
+        setSuccessMsg(`Document successfully parsed into draft matrix (version ${data.matrix.version}).`);
+        setTimeout(() => setSuccessMsg(''), 4000);
+      } else {
+        setErrorMsg(data.error || 'Failed to extract table from file.');
+      }
+    } catch (err) {
+      setErrorMsg('Error uploading spec document.');
+    } finally {
+      setUploadingMatrix(false);
+    }
+  };
+
+  const handleVerifyCell = (cellRef: string) => {
+    setUnconfirmedLowConfidenceCells(unconfirmedLowConfidenceCells.filter((ref) => ref !== cellRef));
+  };
+
+  const handleSaveMatrix = async (matrixToSave: any) => {
+    setSaving(true);
+    setSuccessMsg('');
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/visualizer/matrix', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(matrixToSave),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCurrentMatrix(data.matrix);
+        setSuccessMsg(`Matrix draft saved successfully.`);
+        setTimeout(() => setSuccessMsg(''), 4000);
+      } else {
+        setErrorMsg(data.error || 'Failed to save matrix.');
+      }
+    } catch {
+      setErrorMsg('Network error updating matrix.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const activeScene = scenes[activeSceneIdx];
   const activeZoneObj = activeScene?.zones.find((z) => z.id === activeZoneId);
@@ -387,6 +588,16 @@ export default function VisualizerAdmin() {
           }`}
         >
           Material Verticals
+        </button>
+        <button
+          onClick={() => setActiveTab('hubs')}
+          className={`px-6 py-3 text-xs font-mono uppercase tracking-wider border-b-2 cursor-pointer transition-all ${
+            activeTab === 'hubs'
+              ? 'border-ember text-ember font-bold'
+              : 'border-transparent text-stone-dim hover:text-stone'
+          }`}
+        >
+          Hub Pages
         </button>
       </div>
 
@@ -1339,6 +1550,390 @@ export default function VisualizerAdmin() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================
+          TAB 4: HUB PAGES MANAGER
+      =================================================================== */}
+      {activeTab === 'hubs' && (
+        <div className="space-y-8">
+          {/* Active Category Selector */}
+          <div className="flex gap-2 border-b border-line/30 pb-4">
+            {['plywood', 'laminates', 'veneer', 'decoratives'].map((vertical) => (
+              <button
+                key={vertical}
+                onClick={() => {
+                  setActiveHubCategory(vertical);
+                  setEditingFaq(null);
+                }}
+                className={`px-4 py-2 text-xs font-mono uppercase tracking-wider rounded-sm transition-all cursor-pointer ${
+                  activeHubCategory === vertical
+                    ? 'bg-brass text-ink font-semibold'
+                    : 'bg-ink border border-line text-stone-dim hover:text-stone'
+                }`}
+              >
+                {vertical} Hub
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Left: Outline Section Sequence and FAQs */}
+            <div className="lg:col-span-6 space-y-8">
+              
+              {/* Outline configurations */}
+              {hubConfigs.map((config) => (
+                <div key={config.id} className="bg-ink-2/40 border border-line p-5 rounded-sm space-y-4">
+                  <span className="block text-[10px] font-mono tracking-widest text-brass uppercase font-semibold">
+                    Page outline sequence & visibility
+                  </span>
+                  <div className="space-y-2">
+                    {config.sectionOrder.map((section: string, idx: number) => (
+                      <div
+                        key={section}
+                        className="flex items-center justify-between p-3 border border-line bg-ink rounded-sm text-xs"
+                      >
+                        <div className="flex items-center gap-3">
+                          {/* Visibility Checkbox */}
+                          <input
+                            type="checkbox"
+                            checked={config.visibility[section] !== false}
+                            onChange={(e) => {
+                              const updatedVisibility = {
+                                ...config.visibility,
+                                [section]: e.target.checked,
+                              };
+                              const updatedConfigs = hubConfigs.map((c) =>
+                                c.id === config.id ? { ...c, visibility: updatedVisibility } : c
+                              );
+                              setHubConfigs(updatedConfigs);
+                            }}
+                            className="w-3.5 h-3.5 border-line bg-ink-2 text-brass rounded-sm focus:ring-0"
+                          />
+                          <span className="font-mono uppercase tracking-wider text-parchment text-[11px]">
+                            {section === 'swatches' && 'Interactive Swatches Grid'}
+                            {section === 'catalogue' && 'Product Catalogue Card List'}
+                            {section === 'matrix' && 'Comparison Matrix Specification'}
+                            {section === 'faqs' && 'FAQ Accordions'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {/* Re-order arrows */}
+                          <button
+                            onClick={() => {
+                              if (idx === 0) return;
+                              const newOrder = [...config.sectionOrder];
+                              const temp = newOrder[idx];
+                              newOrder[idx] = newOrder[idx - 1];
+                              newOrder[idx - 1] = temp;
+                              setHubConfigs(
+                                hubConfigs.map((c) =>
+                                  c.id === config.id ? { ...c, sectionOrder: newOrder } : c
+                                )
+                              );
+                            }}
+                            disabled={idx === 0}
+                            className="p-1 text-stone-dim hover:text-parchment disabled:opacity-20 cursor-pointer"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (idx === config.sectionOrder.length - 1) return;
+                              const newOrder = [...config.sectionOrder];
+                              const temp = newOrder[idx];
+                              newOrder[idx] = newOrder[idx + 1];
+                              newOrder[idx + 1] = temp;
+                              setHubConfigs(
+                                hubConfigs.map((c) =>
+                                  c.id === config.id ? { ...c, sectionOrder: newOrder } : c
+                                )
+                              );
+                            }}
+                            disabled={idx === config.sectionOrder.length - 1}
+                            className="p-1 text-stone-dim hover:text-parchment disabled:opacity-20 cursor-pointer"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <button
+                      onClick={() => handleSaveOutlineConfig(config)}
+                      className="bg-ember hover:bg-ember-light text-ember-text font-mono text-[9px] uppercase tracking-wider font-semibold py-1.5 px-4 rounded-sm flex items-center gap-1 cursor-pointer"
+                    >
+                      <Save className="w-3.5 h-3.5" /> Save Layout Outline
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {/* FAQ Editor */}
+              <div className="bg-ink-2/40 border border-line p-5 rounded-sm space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="block text-[10px] font-mono tracking-widest text-brass uppercase font-semibold">
+                    Frequently Asked Questions ({faqs.length})
+                  </span>
+                  <button
+                    onClick={() => setEditingFaq({ question: '', answer: '', displayOrder: faqs.length + 1 })}
+                    className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-wider text-brass hover:text-parchment cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add FAQ
+                  </button>
+                </div>
+
+                {editingFaq && (
+                  <form onSubmit={handleSaveFaq} className="bg-ink border border-line p-4 rounded-sm space-y-3">
+                    <span className="block text-[8px] font-mono tracking-widest text-brass uppercase">
+                      {editingFaq.id ? 'Edit FAQ Item' : 'New FAQ Item'}
+                    </span>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                          Question
+                        </label>
+                        <input
+                          type="text"
+                          value={editingFaq.question}
+                          onChange={(e) => setEditingFaq({ ...editingFaq, question: e.target.value })}
+                          className="w-full bg-ink-2 border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                          Answer (Rich text or Plain text)
+                        </label>
+                        <textarea
+                          value={editingFaq.answer}
+                          onChange={(e) => setEditingFaq({ ...editingFaq, answer: e.target.value })}
+                          className="w-full h-24 bg-ink-2 border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none resize-none"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[8px] font-mono uppercase text-stone-dim mb-1">
+                          Display Order
+                        </label>
+                        <input
+                          type="number"
+                          value={editingFaq.displayOrder}
+                          onChange={(e) => setEditingFaq({ ...editingFaq, displayOrder: Number(e.target.value) })}
+                          className="w-full bg-ink-2 border border-line p-2 text-xs text-parchment rounded-sm focus:border-ember outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingFaq(null)}
+                        className="bg-transparent border border-line text-stone text-[9px] font-mono uppercase py-1 px-3 rounded-sm cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="bg-brass text-ink font-mono text-[9px] font-semibold uppercase tracking-wider py-1 px-4 rounded-sm cursor-pointer"
+                      >
+                        Save FAQ
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                  {faqs.map((faq) => (
+                    <div key={faq.id} className="p-3 border border-line/40 bg-ink-2/20 rounded-sm space-y-1 text-xs">
+                      <div className="flex justify-between items-start gap-3">
+                        <span className="font-semibold text-parchment leading-tight">{faq.question}</span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => setEditingFaq(faq)}
+                            className="p-1 border border-line/60 hover:border-parchment rounded-sm cursor-pointer"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteFaq(faq.id)}
+                            className="p-1 border border-line/60 hover:border-red-500 text-stone-dim hover:text-red-400 rounded-sm cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-stone-dim leading-relaxed text-[11px]">{faq.answer}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Right: Comparison Matrix Extraction with Review UI */}
+            <div className="lg:col-span-6 space-y-6">
+              <div className="bg-ink-2/40 border border-line p-5 rounded-sm space-y-4">
+                <span className="block text-[10px] font-mono tracking-widest text-brass uppercase font-semibold">
+                  Comparison Matrix Extractor
+                </span>
+
+                {/* Upload Section */}
+                <div className="border border-dashed border-line hover:border-brass transition-colors p-6 rounded-sm text-center bg-ink-2/20 space-y-3 relative">
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls,.csv,.docx,.pdf,.png,.jpg,.jpeg"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleUploadMatrix(file);
+                    }}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    disabled={uploadingMatrix}
+                  />
+                  <Upload className="w-8 h-8 mx-auto text-brass animate-pulse" />
+                  <div className="space-y-1">
+                    <span className="block text-xs text-parchment font-medium">
+                      {uploadingMatrix ? 'Uploading & parsing spec sheets...' : 'Upload Spec Sheet Document'}
+                    </span>
+                    <span className="block text-[10px] text-stone-dim">
+                      Supports XLSX, CSV, DOCX, PDF, PNG, JPG (OCR Table Recognition)
+                    </span>
+                  </div>
+                </div>
+
+                {/* Extraction Matrix Panel */}
+                {currentMatrix ? (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center bg-ink p-3 border border-line rounded-sm text-[10px] font-mono">
+                      <div>
+                        <span className="block text-stone-dim">File: {currentMatrix.sourceDocumentName}</span>
+                        <span className="block text-brass">Version: {currentMatrix.version} (Status: {currentMatrix.status.toUpperCase()})</span>
+                      </div>
+                      <span className="px-2 py-0.5 bg-line/60 rounded-sm uppercase text-[9px]">
+                        {currentMatrix.status}
+                      </span>
+                    </div>
+
+                    {/* Low Confidence Warning Box */}
+                    {unconfirmedLowConfidenceCells.length > 0 && (
+                      <div className="p-3 border border-amber/50 bg-amber/5 text-amber-light text-xs font-mono rounded-sm flex gap-2 items-start">
+                        <AlertTriangle className="w-4 h-4 shrink-0 text-amber" />
+                        <div>
+                          <span className="font-semibold block">Review Required: Low Confidence Cells Detected</span>
+                          <span>We detected spelling noise or structural variations. Please click the highlighted cells below to review, correct, or verify their content before publishing.</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Side-by-Side Review Table */}
+                    <div className="overflow-x-auto border border-line rounded-sm">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-line bg-black/40 text-[9px] font-mono uppercase text-stone-dim">
+                            <th className="p-2 border-r border-line">Product ID</th>
+                            {currentMatrix.columns.map((col: any) => (
+                              <th key={col.fieldKey} className="p-2 border-r border-line min-w-[120px]">
+                                {col.label}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {currentMatrix.rows.map((row: any, rIdx: number) => (
+                            <tr key={rIdx} className="border-b border-line/40 hover:bg-ink-2/10">
+                              <td className="p-2 border-r border-line font-mono text-[10px] text-brass">
+                                {row.productId}
+                              </td>
+                              {currentMatrix.columns.map((col: any) => {
+                                const cellRef = `${rIdx}-${col.fieldKey}`;
+                                const isLowConf = currentMatrix.extractionConfidence?.[cellRef] < 0.8;
+                                const isUnconfirmed = unconfirmedLowConfidenceCells.includes(cellRef);
+                                
+                                return (
+                                  <td
+                                    key={col.fieldKey}
+                                    className={`p-2 border-r border-line relative group ${
+                                      isUnconfirmed
+                                        ? 'bg-amber-950/20 hover:bg-amber-950/30'
+                                        : 'hover:bg-ink'
+                                    }`}
+                                  >
+                                    <input
+                                      type="text"
+                                      value={row.values[col.fieldKey] || ''}
+                                      onChange={(e) => {
+                                        const updatedRows = [...currentMatrix.rows];
+                                        updatedRows[rIdx].values[col.fieldKey] = e.target.value;
+                                        setCurrentMatrix({
+                                          ...currentMatrix,
+                                          rows: updatedRows,
+                                        });
+                                      }}
+                                      className="w-full bg-transparent text-parchment outline-none text-xs"
+                                    />
+                                    {isUnconfirmed && (
+                                      <button
+                                        onClick={() => handleVerifyCell(cellRef)}
+                                        className="absolute right-1 top-1 p-0.5 bg-amber border border-amber-light text-ink text-[8px] font-mono uppercase font-bold rounded-sm cursor-pointer shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Verify cell"
+                                      >
+                                        Verify
+                                      </button>
+                                    )}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Matrix Save/Publish CTAs */}
+                    <div className="flex justify-between items-center pt-2">
+                      <button
+                        onClick={() => {
+                          if (confirm('Revert all extraction draft edits?')) {
+                            setCurrentMatrix(null);
+                          }
+                        }}
+                        className="bg-transparent border border-line text-stone text-[9px] font-mono uppercase py-1.5 px-3 rounded-sm cursor-pointer"
+                      >
+                        Reset Matrix
+                      </button>
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleSaveMatrix({ ...currentMatrix, status: 'draft' })}
+                          className="bg-ink border border-line text-stone hover:text-parchment font-mono text-[9px] uppercase tracking-wider font-semibold py-1.5 px-4 rounded-sm cursor-pointer"
+                        >
+                          Save Draft
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            if (unconfirmedLowConfidenceCells.length > 0) {
+                              alert('Please confirm all low-confidence highlighted cells before publishing.');
+                              return;
+                            }
+                            handleSaveMatrix({ ...currentMatrix, status: 'published' });
+                          }}
+                          className="bg-brass text-ink font-mono text-[9px] uppercase tracking-wider font-bold py-1.5 px-5 rounded-sm cursor-pointer flex items-center gap-1"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5" /> Publish Specs Table
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[10px] font-mono text-stone-dim italic text-center py-4">
+                    No comparison specs catalog loaded yet. Upload a document above to extract comparison values.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

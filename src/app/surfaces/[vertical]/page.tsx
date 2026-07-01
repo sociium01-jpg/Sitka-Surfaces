@@ -43,6 +43,14 @@ export default function VerticalHub({ params }: { params: Promise<{ vertical: st
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [categories, setCategories] = useState<string[]>(['All']);
   const [loading, setLoading] = useState(true);
+
+  // Dynamic layout states
+  const [hubConfig, setHubConfig] = useState<any>({
+    sectionOrder: ['swatches', 'catalogue', 'matrix', 'faqs'],
+    visibility: { swatches: true, catalogue: true, matrix: true, faqs: true }
+  });
+  const [dynamicMatrix, setDynamicMatrix] = useState<any>(null);
+  const [dynamicFaqs, setDynamicFaqs] = useState<any[]>([]);
   
   // Accordion state for FAQs
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(null);
@@ -82,6 +90,29 @@ export default function VerticalHub({ params }: { params: Promise<{ vertical: st
         const mediaData = await mediaRes.json();
         if (mediaData.success && mediaData.media[verticalKey]) {
           setMedia(mediaData.media[verticalKey]);
+        }
+
+        // Fetch custom hub page outlines and dynamic contents
+        const [configRes, faqsRes, matrixRes] = await Promise.all([
+          fetch(`/api/visualizer/hub-configs?category=${verticalKey}`),
+          fetch(`/api/visualizer/faqs?category=${verticalKey}`),
+          fetch(`/api/visualizer/matrix?category=${verticalKey}`),
+        ]);
+
+        const [configData, faqsData, matrixData] = await Promise.all([
+          configRes.json(),
+          faqsRes.json(),
+          matrixRes.json(),
+        ]);
+
+        if (configData.success && configData.config) {
+          setHubConfig(configData.config);
+        }
+        if (faqsData.success && faqsData.faqs.length > 0) {
+          setDynamicFaqs(faqsData.faqs);
+        }
+        if (matrixData.success && matrixData.matrix) {
+          setDynamicMatrix(matrixData.matrix);
         }
       } catch (err) {
         console.error('Failed to load vertical page data:', err);
@@ -250,181 +281,234 @@ export default function VerticalHub({ params }: { params: Promise<{ vertical: st
         </div>
       </section>
 
-      {/* 3. PRODUCT RANGE GRID (WITH FILTER) */}
-      <section className="bg-ink border-t border-line/60 py-24 md:py-32">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 space-y-12">
-          <Reveal className="flex justify-between items-end gap-6 flex-wrap">
-            <div className="space-y-2">
-              <span className="text-[10px] font-mono tracking-widest text-brass uppercase">Product Catalog</span>
-              <h2 className="text-2xl md:text-3xl font-display font-medium text-parchment">The {verticalKey} Range</h2>
-            </div>
-            
-            {/* Category Filter Pills */}
-            <div className="flex gap-2 overflow-x-auto pb-1 max-w-full custom-scrollbar">
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`py-2 px-4 rounded-sm text-[10px] font-mono tracking-wider uppercase border transition-all duration-300 cursor-pointer ${
-                    selectedCategory === cat 
-                      ? 'bg-ember border-ember text-parchment' 
-                      : 'border-line text-stone-dim hover:border-stone-dim/60 hover:text-stone'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </Reveal>
+      {/* DYNAMIC HUB SECTIONS */}
+      {hubConfig.sectionOrder.map((section: string) => {
+        const isVisible = hubConfig.visibility?.[section] !== false;
+        if (!isVisible) return null;
 
-          {/* Products Grid */}
-          <Reveal className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" delay={100}>
-            {filteredProducts.length > 0 ? (
-              filteredProducts.map((p) => {
-                const specs = JSON.parse(p.specs || '{}');
-                return (
-                  <div 
-                    key={p.id}
-                    className="border border-line bg-ink-2 p-6 md:p-8 rounded-sm space-y-5 hover:border-brass/30 transition-colors duration-300 flex flex-col justify-between"
-                  >
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[9px] font-mono tracking-widest text-brass uppercase">
-                          {p.category}
-                        </span>
-                        {p.isFeatured && (
-                          <span className="text-[8px] bg-ember/15 text-ember-light font-mono px-1.5 py-0.5 rounded-sm">
-                            FEATURED
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="text-lg font-display font-semibold text-parchment">
-                        {p.name}
-                      </h3>
-                      <p className="text-stone-dim text-xs leading-relaxed font-sans normal-case">
-                        {p.description}
-                      </p>
-                      
-                      {/* Short specs block */}
-                      <div className="bg-ink/50 border border-line/40 rounded-sm p-3 space-y-1.5 text-[10px] font-mono text-stone-dim">
-                        {Object.entries(specs).slice(0, 3).map(([key, val]) => (
-                          <div key={key} className="flex justify-between gap-4 border-b border-line/20 pb-1 last:border-b-0 last:pb-0">
-                            <span className="uppercase tracking-wider">{key}</span>
-                            <span className="text-parchment text-right">{val as string}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <Link 
-                      href={`/surfaces/${verticalKey}/${p.slug}`}
-                      className="text-[10px] font-mono tracking-wider uppercase text-ember-light hover:text-ember transition-colors flex items-center gap-1.5 pt-4 border-t border-line/30"
-                    >
-                      View Technical Specs <ChevronRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="col-span-full border border-dashed border-line p-12 text-center text-stone-dim text-sm">
-                No products found matching the selected category.
+        if (section === 'swatches') {
+          return (
+            <section key="swatches" className="bg-ink border-t border-line/60 py-24 md:py-32">
+              <div className="max-w-7xl mx-auto px-6 md:px-12 space-y-12">
+                <Reveal className="space-y-2">
+                  <span className="text-[10px] font-mono tracking-widest text-brass uppercase">Interactive Swatch</span>
+                  <h2 className="text-2xl md:text-3xl font-display font-medium text-parchment">Detail Inspector</h2>
+                </Reveal>
+                <Reveal delay={100}>
+                  <TextureExplorer verticalName={verticalKey} />
+                </Reveal>
               </div>
-            )}
-          </Reveal>
-        </div>
-      </section>
+            </section>
+          );
+        }
 
-      {/* 4. SPECIFICATION COMPARISON TABLE */}
-      <section className="bg-ink border-t border-line/60 py-24 md:py-32">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 space-y-12">
-          <Reveal className="space-y-2">
-            <span className="text-[10px] font-mono tracking-widest text-brass uppercase">Specifications</span>
-            <h2 className="text-2xl md:text-3xl font-display font-medium text-parchment">Comparison Matrix</h2>
-          </Reveal>
-          
-          <Reveal className="overflow-x-auto border border-line rounded-sm custom-scrollbar" delay={100}>
-            <table className="w-full border-collapse text-left text-xs font-mono tracking-wide text-stone">
-              <thead>
-                <tr className="bg-ink-2 border-b border-line text-brass uppercase tracking-wider">
-                  <th className="p-4 md:p-5 font-semibold">Product Name</th>
-                  {vInfo.specsTableHeaders.map((header) => (
-                    <th key={header} className="p-4 md:p-5 font-semibold">{header}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line/60">
-                {products.map((p) => {
-                  const specs = JSON.parse(p.specs || '{}');
-                  return (
-                    <tr key={p.id} className="hover:bg-ink-2/30 transition-colors">
-                      <td className="p-4 md:p-5 font-sans font-semibold text-parchment">{p.name}</td>
-                      {vInfo.specsTableHeaders.map((header) => (
-                        <td key={header} className="p-4 md:p-5 text-stone-dim">
-                          {specs[header] || specs[header.toLowerCase()] || '-'}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* 5. TEXTURE EXPLORER Swatch Viewer */}
-      <section className="bg-ink border-t border-line/60 py-24 md:py-32">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 space-y-12">
-          <Reveal className="space-y-2">
-            <span className="text-[10px] font-mono tracking-widest text-brass uppercase">Interactive Swatch</span>
-            <h2 className="text-2xl md:text-3xl font-display font-medium text-parchment">Detail Inspector</h2>
-          </Reveal>
-          <Reveal delay={100}>
-            <TextureExplorer verticalName={verticalKey} />
-          </Reveal>
-        </div>
-      </section>
-
-      {/* 6. FAQ ACCORDION SECTION */}
-      <section className="bg-ink border-t border-line/60 py-24 md:py-32" id="faq">
-        <div className="max-w-3xl mx-auto px-6 space-y-12">
-          <Reveal className="text-center space-y-2">
-            <span className="text-[10px] font-mono tracking-widest text-brass uppercase block">Knowledge Base</span>
-            <h2 className="text-2xl md:text-3xl font-display font-medium text-parchment">Frequently Asked Questions</h2>
-          </Reveal>
-
-          {/* Accordion List */}
-          <Reveal className="space-y-4" delay={100}>
-            {vInfo.faqs.map((faq, idx) => {
-              const isOpen = openFaqIdx === idx;
-              return (
-                <div 
-                  key={idx}
-                  className="border border-line bg-ink-2 rounded-sm transition-all duration-300"
-                >
-                  <button
-                    onClick={() => setOpenFaqIdx(isOpen ? null : idx)}
-                    className="w-full text-left p-5 md:p-6 flex items-center justify-between gap-4 font-display font-medium text-parchment text-sm md:text-base cursor-pointer focus:outline-none"
-                  >
-                    <span className="flex items-center gap-2.5">
-                      <HelpCircle className="w-4 h-4 text-brass flex-shrink-0" />
-                      {faq.q}
-                    </span>
-                    <ChevronDown className={`w-4 h-4 text-stone-dim transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  <div className={`transition-all duration-300 overflow-hidden ${
-                    isOpen ? 'max-h-[200px] border-t border-line/45' : 'max-h-0'
-                  }`}>
-                    <p className="p-5 md:p-6 text-xs md:text-sm text-stone-dim leading-relaxed font-sans normal-case">
-                      {faq.a}
-                    </p>
+        if (section === 'catalogue') {
+          return (
+            <section key="catalogue" className="bg-ink border-t border-line/60 py-24 md:py-32">
+              <div className="max-w-7xl mx-auto px-6 md:px-12 space-y-12">
+                <Reveal className="flex justify-between items-end gap-6 flex-wrap">
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-mono tracking-widest text-brass uppercase">Product Catalog</span>
+                    <h2 className="text-2xl md:text-3xl font-display font-medium text-parchment">The {verticalKey} Range</h2>
                   </div>
-                </div>
-              );
-            })}
-          </Reveal>
-        </div>
-      </section>
+                  
+                  {/* Category Filter Pills */}
+                  <div className="flex gap-2 overflow-x-auto pb-1 max-w-full custom-scrollbar">
+                    {categories.map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`py-2 px-4 rounded-sm text-[10px] font-mono tracking-wider uppercase border transition-all duration-300 cursor-pointer ${
+                          selectedCategory === cat 
+                            ? 'bg-ember border-ember text-parchment' 
+                            : 'border-line text-stone-dim hover:border-stone-dim/60 hover:text-stone'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </Reveal>
+
+                {/* Products Grid */}
+                <Reveal className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" delay={100}>
+                  {filteredProducts.length > 0 ? (
+                    filteredProducts.map((p) => {
+                      const specs = JSON.parse(p.specs || '{}');
+                      return (
+                        <div 
+                          key={p.id}
+                          className="border border-line bg-ink-2 p-6 md:p-8 rounded-sm space-y-5 hover:border-brass/30 transition-colors duration-300 flex flex-col justify-between"
+                        >
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[9px] font-mono tracking-widest text-brass uppercase">
+                                {p.category}
+                              </span>
+                              {p.isFeatured && (
+                                <span className="text-[8px] bg-ember/15 text-ember-light font-mono px-1.5 py-0.5 rounded-sm">
+                                  FEATURED
+                                </span>
+                              )}
+                            </div>
+                            <h3 className="text-lg font-display font-semibold text-parchment">
+                              {p.name}
+                            </h3>
+                            <p className="text-stone-dim text-xs leading-relaxed font-sans normal-case">
+                              {p.description}
+                            </p>
+                            
+                            {/* Short specs block */}
+                            <div className="bg-ink/50 border border-line/40 rounded-sm p-3 space-y-1.5 text-[10px] font-mono text-stone-dim">
+                              {Object.entries(specs).slice(0, 3).map(([key, val]) => (
+                                <div key={key} className="flex justify-between gap-4 border-b border-line/20 pb-1 last:border-b-0 last:pb-0">
+                                  <span className="uppercase tracking-wider">{key}</span>
+                                  <span className="text-parchment text-right">{val as string}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <Link 
+                            href={`/surfaces/${verticalKey}/${p.slug}`}
+                            className="text-[10px] font-mono tracking-wider uppercase text-ember-light hover:text-ember transition-colors flex items-center gap-1.5 pt-4 border-t border-line/30"
+                          >
+                            View Technical Specs <ChevronRight className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="col-span-full border border-dashed border-line p-12 text-center text-stone-dim text-sm">
+                      No products found matching the selected category.
+                    </div>
+                  )}
+                </Reveal>
+              </div>
+            </section>
+          );
+        }
+
+        if (section === 'matrix') {
+          return (
+            <section key="matrix" className="bg-ink border-t border-line/60 py-24 md:py-32">
+              <div className="max-w-7xl mx-auto px-6 md:px-12 space-y-12">
+                <Reveal className="space-y-2">
+                  <span className="text-[10px] font-mono tracking-widest text-brass uppercase">Specifications</span>
+                  <h2 className="text-2xl md:text-3xl font-display font-medium text-parchment">Comparison Matrix</h2>
+                </Reveal>
+                
+                <Reveal className="overflow-x-auto border border-line rounded-sm custom-scrollbar" delay={100}>
+                  {dynamicMatrix && dynamicMatrix.status === 'published' ? (
+                    /* Render Dynamic Document-Extracted Specs Sheet */
+                    <table className="w-full border-collapse text-left text-xs font-mono tracking-wide text-stone">
+                      <thead>
+                        <tr className="bg-ink-2 border-b border-line text-brass uppercase tracking-wider">
+                          <th className="p-4 md:p-5 font-semibold">Product ID</th>
+                          {dynamicMatrix.columns.map((col: any) => (
+                            <th key={col.fieldKey} className="p-4 md:p-5 font-semibold">
+                              {col.label}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-line/60">
+                        {dynamicMatrix.rows.map((row: any, idx: number) => (
+                          <tr key={idx} className="hover:bg-ink-2/30 transition-colors">
+                            <td className="p-4 md:p-5 font-sans font-semibold text-parchment">{row.productId}</td>
+                            {dynamicMatrix.columns.map((col: any) => (
+                              <td key={col.fieldKey} className="p-4 md:p-5 text-stone-dim">
+                                {row.values[col.fieldKey] || '-'}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    /* Fallback to Default Static Layout */
+                    <table className="w-full border-collapse text-left text-xs font-mono tracking-wide text-stone">
+                      <thead>
+                        <tr className="bg-ink-2 border-b border-line text-brass uppercase tracking-wider">
+                          <th className="p-4 md:p-5 font-semibold">Product Name</th>
+                          {vInfo.specsTableHeaders.map((header) => (
+                            <th key={header} className="p-4 md:p-5 font-semibold">{header}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-line/60">
+                        {products.map((p) => {
+                          const specs = JSON.parse(p.specs || '{}');
+                          return (
+                            <tr key={p.id} className="hover:bg-ink-2/30 transition-colors">
+                              <td className="p-4 md:p-5 font-sans font-semibold text-parchment">{p.name}</td>
+                              {vInfo.specsTableHeaders.map((header) => (
+                                <td key={header} className="p-4 md:p-5 text-stone-dim">
+                                  {specs[header] || specs[header.toLowerCase()] || '-'}
+                                </td>
+                              ))}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </Reveal>
+              </div>
+            </section>
+          );
+        }
+
+        if (section === 'faqs') {
+          const faqItems = dynamicFaqs.length > 0 
+            ? dynamicFaqs.map((f) => ({ q: f.question, a: f.answer }))
+            : vInfo.faqs;
+
+          return (
+            <section key="faqs" className="bg-ink border-t border-line/60 py-24 md:py-32" id="faq">
+              <div className="max-w-3xl mx-auto px-6 space-y-12">
+                <Reveal className="text-center space-y-2">
+                  <span className="text-[10px] font-mono tracking-widest text-brass uppercase block">Knowledge Base</span>
+                  <h2 className="text-2xl md:text-3xl font-display font-medium text-parchment">Frequently Asked Questions</h2>
+                </Reveal>
+
+                {/* Accordion List */}
+                <Reveal className="space-y-4" delay={100}>
+                  {faqItems.map((faq, idx) => {
+                    const isOpen = openFaqIdx === idx;
+                    return (
+                      <div 
+                        key={idx}
+                        className="border border-line bg-ink-2 rounded-sm transition-all duration-300"
+                      >
+                        <button
+                          onClick={() => setOpenFaqIdx(isOpen ? null : idx)}
+                          className="w-full text-left p-5 md:p-6 flex items-center justify-between gap-4 font-display font-medium text-parchment text-sm md:text-base cursor-pointer focus:outline-none"
+                        >
+                          <span className="flex items-center gap-2.5">
+                            <HelpCircle className="w-4 h-4 text-brass flex-shrink-0" />
+                            {faq.q}
+                          </span>
+                          <ChevronDown className={`w-4 h-4 text-stone-dim transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        <div className={`transition-all duration-300 overflow-hidden ${
+                          isOpen ? 'max-h-[200px] border-t border-line/45' : 'max-h-0'
+                        }`}>
+                          <p className="p-5 md:p-6 text-xs md:text-sm text-stone-dim leading-relaxed font-sans normal-case">
+                            {faq.a}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </Reveal>
+              </div>
+            </section>
+          );
+        }
+
+        return null;
+      })}
 
       {/* 7. CROSS-SELL STRIP */}
       <section className="bg-ink-2 border-t border-b border-line py-16 text-center select-none relative overflow-hidden">

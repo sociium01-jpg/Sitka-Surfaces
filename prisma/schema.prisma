@@ -166,3 +166,38 @@ model Finish {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 }
+
+model HubPageSectionConfig {
+  id           String   @id @default(uuid())
+  category     String   @unique // e.g. "plywood", "laminates", "veneer", "decoratives"
+  sectionOrder String   // JSON array string, e.g. ["swatches", "catalogue", "matrix", "faqs"]
+  visibility   String   // JSON object string, e.g. {"swatches":true, "catalogue":true, "matrix":true, "faqs":true}
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model FAQ {
+  id           String   @id @default(uuid())
+  category     String   // "plywood", "laminates", "veneer", "decoratives"
+  question     String
+  answer       String   // Rich text description
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ComparisonMatrix {
+  id                  String   @id @default(uuid())
+  category            String   @unique // "plywood", "laminates", "veneer", "decoratives"
+  columns             String   // JSON string array: [{ fieldKey: string, label: string }]
+  rows                String   // JSON string array: [{ productId: string, values: { [fieldKey]: string } }]
+  sourceDocumentName  String?
+  sourceDocumentUrl   String?
+  sourceDocumentFormat String?
+  extractionConfidence String? // JSON string: { [cellRef]: number }
+  version             Int      @default(1)
+  status              String   @default("draft") // "draft" | "published"
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+

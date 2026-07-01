@@ -63,3 +63,37 @@ export interface VisualizerScene {
     edgeAO?: number;
   };
 }
+
+export interface HubPageSectionConfig {
+  id: string;
+  category: string; // "plywood" | "laminates" | "veneer" | "decoratives"
+  sectionOrder: string[]; // ["swatches", "catalogue", "matrix", "faqs"]
+  visibility: {
+    swatches: boolean;
+    catalogue: boolean;
+    matrix: boolean;
+    faqs: boolean;
+  };
+}
+
+export interface FAQ {
+  id: string;
+  category: string;
+  question: string;
+  answer: string;
+  displayOrder: number;
+}
+
+export interface ComparisonMatrix {
+  id: string;
+  category: string;
+  columns: { fieldKey: string; label: string }[];
+  rows: { productId: string; productName?: string; values: Record<string, string> }[];
+  sourceDocumentName?: string | null;
+  sourceDocumentUrl?: string | null;
+  sourceDocumentFormat?: string | null;
+  extractionConfidence?: Record<string, number> | null;
+  version: number;
+  status: 'draft' | 'published';
+}
+
