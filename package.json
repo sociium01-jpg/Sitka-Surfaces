@@ -4,14 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
-    "@prisma/adapter-better-sqlite3": "^7.8.0",
     "@prisma/client": "^7.8.0",
-    "better-sqlite3": "^12.11.1",
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.22.0",
     "next": "16.2.9",
@@ -27,6 +25,10 @@
     "eslint-config-next": "16.2.9",
     "prisma": "^7.8.0",
     "tailwindcss": "^4",
+    "tsx": "^4.19.0",
     "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }
