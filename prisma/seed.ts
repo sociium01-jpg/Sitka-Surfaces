@@ -409,6 +409,64 @@ Quarter-cut veneer's straight grain reads as more formal and architectural; rota
   }
   console.log('Blog posts seeded.');
 
+  // 7. Seed Default Visualizer Scene and Zones
+  await prisma.visualizerScene.deleteMany({});
+  await prisma.visualizerScene.create({
+    data: {
+      id: 'kitchen-main-scene',
+      name: 'Modern Kitchen (Placeholder)',
+      slug: 'kitchen-main-scene',
+      roomImage: '/modern_kitchen_scene.png',
+      naturalWidth: 1024,
+      naturalHeight: 1024,
+      status: 'PUBLISHED',
+      displayOrder: 0,
+      whereShown: JSON.stringify(['HOMEPAGE', 'VISUALIZER']),
+      overlaySettings: JSON.stringify({ opacity: 0.75 }),
+      zones: {
+        create: [
+          {
+            id: 'feature-wall',
+            label: 'Feature Wall',
+            corners: JSON.stringify([[0, 0], [1024, 0], [1024, 450], [0, 450]]),
+            widthCm: 360,
+            heightCm: 160,
+            allowedCategories: JSON.stringify(['Plywood', 'Laminates', 'Veneer', 'Decoratives']),
+            displayOrder: 1,
+          },
+          {
+            id: 'cabinetry',
+            label: 'Cabinetry',
+            corners: JSON.stringify([[0, 520], [1024, 520], [1024, 920], [0, 920]]),
+            widthCm: 360,
+            heightCm: 90,
+            allowedCategories: JSON.stringify(['Plywood', 'Laminates', 'Veneer']),
+            displayOrder: 2,
+          },
+          {
+            id: 'countertop',
+            label: 'Countertop',
+            corners: JSON.stringify([[0, 450], [1024, 450], [1024, 520], [0, 520]]),
+            widthCm: 360,
+            heightCm: 60,
+            allowedCategories: JSON.stringify(['Laminates']),
+            displayOrder: 3,
+          },
+          {
+            id: 'floor',
+            label: 'Floor',
+            corners: JSON.stringify([[0, 920], [1024, 920], [1024, 1024], [0, 1024]]),
+            widthCm: 360,
+            heightCm: 120,
+            allowedCategories: JSON.stringify(['Plywood', 'Laminates']),
+            displayOrder: 4,
+          },
+        ]
+      }
+    }
+  });
+  console.log('Visualizer scene and zones seeded.');
+
   console.log('Database seeding complete successfully!');
 }
 

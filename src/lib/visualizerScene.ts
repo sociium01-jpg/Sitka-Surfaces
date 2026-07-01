@@ -205,9 +205,9 @@ const allFinishes = Object.values(FINISHES).flat();
 // ─── Default Mock Scene Setup ────────────────────────────────────────────────
 export const defaultScene: VisualizerScene = {
   id: 'kitchen-main-scene',
-  name: 'Modern Kitchen Visualiser',
+  name: 'Modern Kitchen (Placeholder)',
   slug: 'kitchen-main-scene',
-  roomImage: '/visualizer-room.png',
+  roomImage: '/modern_kitchen_scene.png',
   naturalWidth: 1024,
   naturalHeight: 1024,
   status: 'PUBLISHED',
@@ -218,37 +218,37 @@ export const defaultScene: VisualizerScene = {
   },
   zones: [
     {
-      id: 'wall',
+      id: 'feature-wall',
       label: 'Feature Wall',
       mask: null,
       shadingLayer: null,
       corners: [
-        [0, 0],       // TL
-        [1024, 0],     // TR
-        [1024, 317],   // BR
-        [0, 317],      // BL
+        [0, 0],
+        [1024, 0],
+        [1024, 450],
+        [0, 450],
       ],
       widthCm: 360,
-      heightCm: 120,
+      heightCm: 160,
       allowedCategories: ['Plywood', 'Laminates', 'Veneer', 'Decoratives'],
       defaultFinish: FINISHES.Plywood[2], // American Walnut
       displayOrder: 1,
     },
     {
-      id: 'upperCabinet',
-      label: 'Upper Cabinets',
+      id: 'cabinetry',
+      label: 'Cabinetry',
       mask: null,
       shadingLayer: null,
       corners: [
-        [0, 317],
-        [1024, 317],
-        [1024, 481],
-        [0, 481],
+        [0, 520],
+        [1024, 520],
+        [1024, 920],
+        [0, 920],
       ],
       widthCm: 360,
-      heightCm: 50,
+      heightCm: 90,
       allowedCategories: ['Plywood', 'Laminates', 'Veneer'],
-      defaultFinish: FINISHES.Veneer[0], // Burmese Teak
+      defaultFinish: FINISHES.Plywood[0], // Natural Birch Core
       displayOrder: 2,
     },
     {
@@ -257,33 +257,16 @@ export const defaultScene: VisualizerScene = {
       mask: null,
       shadingLayer: null,
       corners: [
-        [0, 481],
-        [1024, 481],
-        [1024, 614],
-        [0, 614],
+        [0, 450],
+        [1024, 450],
+        [1024, 520],
+        [0, 520],
       ],
       widthCm: 360,
-      heightCm: 50,
-      allowedCategories: ['Laminates', 'Decoratives'],
-      defaultFinish: FINISHES.Laminates[5], // Slate
+      heightCm: 60,
+      allowedCategories: ['Laminates'],
+      defaultFinish: FINISHES.Laminates[1], // Matte Obsidian Charcoal
       displayOrder: 3,
-    },
-    {
-      id: 'lowerCabinet',
-      label: 'Lower Cabinets',
-      mask: null,
-      shadingLayer: null,
-      corners: [
-        [0, 614],
-        [1024, 614],
-        [1024, 901],
-        [0, 901],
-      ],
-      widthCm: 360,
-      heightCm: 90,
-      allowedCategories: ['Laminates', 'Plywood'],
-      defaultFinish: FINISHES.Laminates[1], // Charcoal
-      displayOrder: 4,
     },
     {
       id: 'floor',
@@ -291,16 +274,16 @@ export const defaultScene: VisualizerScene = {
       mask: null,
       shadingLayer: null,
       corners: [
-        [0, 901],
-        [1024, 901],
+        [0, 920],
+        [1024, 920],
         [1024, 1024],
         [0, 1024],
       ],
       widthCm: 360,
-      heightCm: 40,
-      allowedCategories: ['Veneer', 'Plywood'],
-      defaultFinish: FINISHES.Veneer[2], // Figured Maple
-      displayOrder: 5,
+      heightCm: 120,
+      allowedCategories: ['Plywood', 'Laminates'],
+      defaultFinish: FINISHES.Laminates[2], // Alabaster Parchment
+      displayOrder: 4,
     },
   ],
 };
