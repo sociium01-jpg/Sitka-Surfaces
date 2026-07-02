@@ -38,7 +38,7 @@ export default function Home() {
   const [content, setContent] = useState<PageContentMap>({});
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
-  const [media, setMedia] = useState({ mediaType: 'image', mediaUrl: '' });
+  const [media, setMedia] = useState<any>({ mediaType: 'image', mediaUrl: '', eyebrow: '', heading: '', subheading: '' });
   const [homepageProjects, setHomepageProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -85,9 +85,9 @@ export default function Home() {
 
   // Default fallback copy if DB query is still loading or empty
   const c = {
-    hero_eyebrow: content['hero_eyebrow'] || 'Sitka Surfaces',
-    hero_headline: content['hero_headline'] || 'Every surface tells you what a space is made of.',
-    hero_subhead: content['hero_subhead'] || 'Plywood, laminates, veneer, and decoratives engineered for architects and designers who refuse to compromise on how a material looks, feels, and lasts.',
+    hero_eyebrow: media?.eyebrow || content['hero_eyebrow'] || 'Sitka Surfaces',
+    hero_headline: media?.heading || content['hero_headline'] || 'Every surface tells you what a space is made of.',
+    hero_subhead: media?.subheading || content['hero_subhead'] || 'Plywood, laminates, veneer, and decoratives engineered for architects and designers who refuse to compromise on how a material looks, feels, and lasts.',
     hero_microtext: content['hero_microtext'] || 'Trusted by studios and fabricators across 40 cities.',
     manifesto_headline: content['manifesto_headline'] || "We don't sell sheets. We sell decisions that outlast the project.",
     manifesto_body: content['manifesto_body'] || "A material choice made today gets looked at, touched, and lived with for the next twenty years. Sitka Surfaces exists for the moment an architect runs a hand across a sample and knows, immediately, that it's right. Four material worlds — Plywood, Laminates, Veneer, Decoratives — built on the same standard: consistent stock, honest specifications, and finishes that hold their character under real-world use.",
@@ -145,7 +145,7 @@ export default function Home() {
             {c.hero_eyebrow}
           </span>
           <h1 className="text-4xl sm:text-6xl md:text-8xl font-display font-medium text-parchment leading-[1.05] max-w-4xl tracking-tight select-none">
-            Every surface tells you what a space is <em className="font-serif italic font-normal text-ember-light">made of</em>.
+            {c.hero_headline}
           </h1>
           <p className="text-stone text-base md:text-lg max-w-xl leading-relaxed font-sans font-normal">
             {c.hero_subhead}

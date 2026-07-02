@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { title, category, summary, content, author, status } = body;
+    const { title, category, summary, content, author, status, mediaType, mediaUrl } = body;
 
     if (!title || !category || !summary || !content) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -63,6 +63,8 @@ export async function POST(req: NextRequest) {
         content,
         author: author || 'Sitka Editor',
         status: status || 'PUBLISHED',
+        mediaType: mediaType || 'image',
+        mediaUrl: mediaUrl || '',
       },
     });
 
@@ -80,7 +82,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { id, title, category, summary, content, author, status } = body;
+    const { id, title, category, summary, content, author, status, mediaType, mediaUrl } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Post ID is required' }, { status: 400 });
@@ -96,6 +98,8 @@ export async function PUT(req: NextRequest) {
     if (content) data.content = content;
     if (author) data.author = author;
     if (status) data.status = status;
+    if (mediaType) data.mediaType = mediaType;
+    if (mediaUrl !== undefined) data.mediaUrl = mediaUrl;
 
     const post = await prisma.post.update({
       where: { id },

@@ -13,6 +13,22 @@ type ProcessStep = {
 
 export default function AboutPage() {
   const [activeStep, setActiveStep] = useState(0);
+  const [media, setMedia] = useState<any>({ mediaType: 'image', mediaUrl: '', eyebrow: '', heading: '', subheading: '' });
+  
+  React.useEffect(() => {
+    async function fetchMedia() {
+      try {
+        const res = await fetch('/api/media');
+        const data = await res.json();
+        if (data.success && data.media.about) {
+          setMedia(data.media.about);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    fetchMedia();
+  }, []);
 
   const steps: ProcessStep[] = [
     {
@@ -54,19 +70,28 @@ export default function AboutPage() {
       {/* 1. HERO HEADER */}
       <section className="relative min-h-[50vh] flex flex-col justify-center py-20 bg-ink">
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-cover bg-center opacity-25 filter saturate-50" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80")' }} />
+          {media.mediaType === 'video' && media.mediaUrl ? (
+            <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-20 filter saturate-50">
+              <source src={media.mediaUrl} type="video/mp4" />
+            </video>
+          ) : (
+            <div 
+              className="absolute inset-0 bg-cover bg-center opacity-25 filter saturate-50" 
+              style={{ backgroundImage: `url("${media.mediaUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80'}")` }} 
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-[#15120F]/95" />
         </div>
 
         <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10 w-full space-y-4">
           <span className="text-xs font-mono tracking-widest text-brass uppercase block">
-            Brand Narrative
+            {media.eyebrow || 'Brand Narrative'}
           </span>
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-medium text-parchment leading-tight max-w-3xl">
-            Surfaces, made with intent.
+            {media.heading || 'Surfaces, made with intent.'}
           </h1>
           <p className="text-stone text-base max-w-xl leading-relaxed">
-            Sitka Surfaces was built on a simple premise: the material comes first. We build the substrate and finish choices that hold their character under real-world use.
+            {media.subheading || 'Sitka Surfaces was built on a simple premise: the material comes first. We build the substrate and finish choices that hold their character under real-world use.'}
           </p>
         </div>
       </section>

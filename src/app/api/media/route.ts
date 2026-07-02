@@ -13,12 +13,15 @@ function hasWriteAccess(req: NextRequest): boolean {
 export async function GET(req: NextRequest) {
   try {
     const mediaItems = await prisma.heroMedia.findMany();
-    const mediaMap: Record<string, { mediaType: string; mediaUrl: string; fallbackUrl?: string | null }> = {};
+    const mediaMap: Record<string, { mediaType: string; mediaUrl: string; fallbackUrl?: string | null; eyebrow?: string | null; heading?: string | null; subheading?: string | null }> = {};
     mediaItems.forEach(item => {
       mediaMap[item.page] = {
         mediaType: item.mediaType,
         mediaUrl: item.mediaUrl,
         fallbackUrl: item.fallbackUrl,
+        eyebrow: item.eyebrow,
+        heading: item.heading,
+        subheading: item.subheading,
       };
     });
     return NextResponse.json({ success: true, media: mediaMap });
@@ -35,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { page, mediaType, mediaUrl, fallbackUrl } = body;
+    const { page, mediaType, mediaUrl, fallbackUrl, eyebrow, heading, subheading } = body;
 
     if (!page || !mediaType || !mediaUrl) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -43,8 +46,23 @@ export async function POST(req: NextRequest) {
 
     const media = await prisma.heroMedia.upsert({
       where: { page },
-      update: { mediaType, mediaUrl, fallbackUrl: fallbackUrl || null },
-      create: { page, mediaType, mediaUrl, fallbackUrl: fallbackUrl || null },
+      update: { 
+        mediaType, 
+        mediaUrl, 
+        fallbackUrl: fallbackUrl || null,
+        eyebrow: eyebrow || null,
+        heading: heading || null,
+        subheading: subheading || null,
+      },
+      create: { 
+        page, 
+        mediaType, 
+        mediaUrl, 
+        fallbackUrl: fallbackUrl || null,
+        eyebrow: eyebrow || null,
+        heading: heading || null,
+        subheading: subheading || null,
+      },
     });
 
     return NextResponse.json({ success: true, media });

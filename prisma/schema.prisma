@@ -51,6 +51,8 @@ model Post {
   author      String
   publishedAt DateTime @default(now())
   status      String   // "DRAFT", "PUBLISHED"
+  mediaType   String   @default("image") // "image" | "video" | "none"
+  mediaUrl    String?
 }
 
 model Testimonial {
@@ -84,6 +86,9 @@ model HeroMedia {
   mediaType   String   // "image" or "video"
   mediaUrl    String   // URL or local path
   fallbackUrl String? // Image fallback for videos
+  eyebrow     String?  // Eyebrow text overlay
+  heading     String?  // Main header title overlay
+  subheading  String?  // Subtitle description overlay
   createdAt   DateTime @default(now())
 }
 

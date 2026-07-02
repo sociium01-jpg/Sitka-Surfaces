@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Plus, Trash2, Edit2, Sliders, Check, Settings, Copy, Image as ImageIcon, ArrowUp, ArrowDown, Upload, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Save, Plus, Trash2, Edit2, Sliders, Check, Settings, Copy, Image as ImageIcon, ArrowUp, ArrowDown, Upload, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { VisualizerScene, VisualizerZone, Finish } from '@/types/visualizer';
 
 export default function VisualizerAdmin() {
@@ -608,6 +608,53 @@ export default function VisualizerAdmin() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left: scenes list and settings */}
           <div className="lg:col-span-8 space-y-6">
+            {/* Mock Schema & Configurations Guide Banner */}
+            <div className="bg-ink-2 border border-line p-5 rounded-sm space-y-3">
+              <div className="flex justify-between items-center">
+                <h4 className="text-xs font-mono uppercase tracking-wider text-brass flex items-center gap-1.5 font-bold">
+                  <Info className="w-4 h-4 text-brass" /> Mock Visualizer Schema Guide
+                </h4>
+                <span className="text-[9px] font-mono bg-ember-light/10 border border-ember-light/20 text-ember-light py-0.5 px-1.5 rounded-sm uppercase">
+                  Ease of Understanding
+                </span>
+              </div>
+              <p className="text-[11px] text-stone-dim leading-relaxed font-sans normal-case">
+                To map room image hotspots and lighting overlays accurately, follow this sample configuration format inside the manager forms:
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                <div className="bg-ink/40 border border-line/45 p-3 rounded-sm space-y-1">
+                  <span className="text-[9px] font-mono text-brass block uppercase">1. Coordinates (Polygons)</span>
+                  <p className="text-[10px] text-stone-dim leading-relaxed font-sans normal-case">
+                    For hot-zones (like a Cabinetry front), enter 2D coordinates mapping the corners in percentages:
+                  </p>
+                  <code className="block text-[9px] font-mono bg-ink p-1.5 rounded-sm text-parchment overflow-x-auto truncate">
+                    {"[[10,20], [60,20], [60,80], [10,80]]"}
+                  </code>
+                </div>
+
+                <div className="bg-ink/40 border border-line/45 p-3 rounded-sm space-y-1">
+                  <span className="text-[9px] font-mono text-brass block uppercase">2. Homography Matrix</span>
+                  <p className="text-[10px] text-stone-dim leading-relaxed font-sans normal-case">
+                    To warp woodgrain textures onto angled surfaces, specify a 3x3 projective transform list:
+                  </p>
+                  <code className="block text-[9px] font-mono bg-ink p-1.5 rounded-sm text-parchment overflow-x-auto truncate">
+                    {"[1.08, -0.05, 12, 0.02, 0.94, -8, 0, 0]"}
+                  </code>
+                </div>
+
+                <div className="bg-ink/40 border border-line/45 p-3 rounded-sm space-y-1">
+                  <span className="text-[9px] font-mono text-brass block uppercase">3. Lighting Settings</span>
+                  <p className="text-[10px] text-stone-dim leading-relaxed font-sans normal-case">
+                    For realistic overlay composites, adjust light intensity, ambient coefficients, and shadow blurs:
+                  </p>
+                  <code className="block text-[9px] font-mono bg-ink p-1.5 rounded-sm text-parchment overflow-x-auto truncate">
+                    {"{ \"ambient\": 0.25, \"shadowBlur\": 12 }"}
+                  </code>
+                </div>
+              </div>
+            </div>
+
             <div className="bg-ink-2/40 border border-line p-4 rounded-sm space-y-3">
               <div className="flex justify-between items-center">
                 <span className="block text-[9px] font-mono tracking-widest text-brass uppercase">

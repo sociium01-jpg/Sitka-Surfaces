@@ -14,6 +14,7 @@ export default function InspirationGallery() {
   const [selectedSpace, setSelectedSpace] = useState('All');
   const [layoutMode, setLayoutMode] = useState<'grid' | 'masonry'>('grid');
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
+  const [media, setMedia] = useState<any>({ mediaType: 'image', mediaUrl: '', eyebrow: '', heading: '', subheading: '' });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,7 +34,19 @@ export default function InspirationGallery() {
         setLoading(false);
       }
     }
+    async function fetchMedia() {
+      try {
+        const res = await fetch('/api/media');
+        const data = await res.json();
+        if (data.success && data.media.inspiration) {
+          setMedia(data.media.inspiration);
+        }
+      } catch (err) {
+        console.error('Failed to load inspiration media:', err);
+      }
+    }
     fetchProjects();
+    fetchMedia();
   }, []);
 
   const verticalFilters = ['All', 'Plywood', 'Laminates', 'Veneer', 'Decoratives'];
@@ -50,22 +63,53 @@ export default function InspirationGallery() {
   return (
     <div className="bg-ink min-h-screen py-24 md:py-32 px-6 md:px-12 max-w-7xl mx-auto space-y-12 select-none">
       
-      {/* 1. Header Title */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-        <div className="space-y-4 max-w-2xl">
-          <span className="text-xs font-mono tracking-widest text-brass uppercase block">
-            Lookbook Portfolio
-          </span>
-          <h1 className="text-3xl sm:text-5xl font-display font-medium text-parchment leading-tight">
-            Specified, fabricated, lived in.
-          </h1>
-          <p className="text-stone text-base leading-relaxed">
-            Explore real-world case studies detailing how architects, interior designers, and contracting builders have specified and structured Sitka Surface materials.
-          </p>
-        </div>
+      {/* 1. Header Title / Hero Banner */}
+      {media.mediaUrl ? (
+        <section className="relative min-h-[40vh] flex flex-col justify-center py-16 bg-ink border border-line rounded-sm overflow-hidden mb-6 animate-fade-in">
+          <div className="absolute inset-0 z-0">
+            {media.mediaType === 'video' ? (
+              <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-20 filter saturate-50">
+                <source src={media.mediaUrl} type="video/mp4" />
+              </video>
+            ) : (
+              <div 
+                className="absolute inset-0 bg-cover bg-center opacity-25 filter saturate-50" 
+                style={{ backgroundImage: `url("${media.mediaUrl}")` }} 
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-[#15120F]/95" />
+          </div>
 
-        {/* Layout Toggle */}
-        <div className="flex gap-1.5 border border-line p-1 rounded-sm bg-ink-2">
+          <div className="relative z-10 w-full p-8 md:p-12 space-y-4">
+            <span className="text-xs font-mono tracking-widest text-brass uppercase block">
+              {media.eyebrow || 'Lookbook Portfolio'}
+            </span>
+            <h1 className="text-2xl sm:text-4xl font-display font-medium text-parchment leading-tight max-w-3xl">
+              {media.heading || 'Specified, fabricated, lived in.'}
+            </h1>
+            <p className="text-stone text-xs sm:text-sm max-w-xl leading-relaxed">
+              {media.subheading || 'Explore real-world case studies detailing how architects, interior designers, and contracting builders have specified and structured Sitka Surface materials.'}
+            </p>
+          </div>
+        </section>
+      ) : null}
+
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+        {!media.mediaUrl && (
+          <div className="space-y-4 max-w-2xl">
+            <span className="text-xs font-mono tracking-widest text-brass uppercase block">
+              {media.eyebrow || 'Lookbook Portfolio'}
+            </span>
+            <h1 className="text-3xl sm:text-5xl font-display font-medium text-parchment leading-tight">
+              {media.heading || 'Specified, fabricated, lived in.'}
+            </h1>
+            <p className="text-stone text-base leading-relaxed">
+              {media.subheading || 'Explore real-world case studies detailing how architects, interior designers, and contracting builders have specified and structured Sitka Surface materials.'}
+            </p>
+          </div>
+        )}
+
+        <div className={`flex gap-1.5 border border-line p-1 rounded-sm bg-ink-2 ${media.mediaUrl ? 'ml-auto' : ''}`}>
           <button
             onClick={() => setLayoutMode('grid')}
             className={`p-2 rounded-sm transition-colors cursor-pointer ${

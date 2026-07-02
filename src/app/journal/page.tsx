@@ -13,6 +13,8 @@ type BlogPost = {
   summary: string;
   author: string;
   publishedAt: string;
+  mediaType?: string;
+  mediaUrl?: string;
 };
 
 export default function JournalListing() {
@@ -132,13 +134,33 @@ export default function JournalListing() {
                   className="border border-line bg-ink-2 p-0 rounded-sm hover:border-brass/35 transition-all duration-300 flex flex-col justify-between group overflow-hidden"
                 >
                   <div>
-                    {/* Thumbnail Image */}
-                    <div className="w-full h-48 overflow-hidden relative border-b border-line">
-                      <img 
-                        src={getSlugImage(post.slug)} 
-                        alt={post.title} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-90"
-                      />
+                     {/* Thumbnail Media */}
+                    <div className="w-full h-48 overflow-hidden relative border-b border-line bg-zinc-950">
+                      {post.mediaType === 'video' && post.mediaUrl ? (
+                        post.mediaUrl.includes('embed') || post.mediaUrl.includes('youtube') ? (
+                          <iframe 
+                            src={post.mediaUrl} 
+                            title={post.title} 
+                            className="w-full h-full object-cover filter brightness-90 border-0"
+                            allow="autoplay; encrypted-media"
+                          />
+                        ) : (
+                          <video 
+                            src={post.mediaUrl} 
+                            autoPlay 
+                            loop 
+                            muted 
+                            playsInline 
+                            className="w-full h-full object-cover filter brightness-90"
+                          />
+                        )
+                      ) : (
+                        <img 
+                          src={post.mediaUrl || getSlugImage(post.slug)} 
+                          alt={post.title} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-90"
+                        />
+                      )}
                       <span className="absolute top-3 left-3 text-[8px] font-mono tracking-widest bg-ink-2 border border-line text-brass px-2 py-1 uppercase rounded-sm z-1">
                         {post.category}
                       </span>

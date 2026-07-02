@@ -39,7 +39,7 @@ export default function VerticalHub({ params }: { params: Promise<{ vertical: st
 
   const [products, setProducts] = useState<Product[]>([]);
   const [content, setContent] = useState<Record<string, string>>({});
-  const [media, setMedia] = useState({ mediaType: 'image', mediaUrl: '' });
+  const [media, setMedia] = useState<any>({ mediaType: 'image', mediaUrl: '', eyebrow: '', heading: '', subheading: '' });
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [categories, setCategories] = useState<string[]>(['All']);
   const [loading, setLoading] = useState(true);
@@ -249,13 +249,13 @@ export default function VerticalHub({ params }: { params: Promise<{ vertical: st
 
         <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10 w-full space-y-5">
           <span className="text-xs font-mono tracking-widest text-brass uppercase block">
-            Material Vertical
+            {media?.eyebrow || 'Material Vertical'}
           </span>
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-medium text-parchment leading-tight max-w-3xl capitalize">
-            {verticalKey}: {vInfo.title}
+            {media?.heading || `${verticalKey}: ${vInfo.title}`}
           </h1>
           <p className="text-stone text-base max-w-xl leading-relaxed">
-            {vInfo.subhead}
+            {media?.subheading || vInfo.subhead}
           </p>
         </div>
       </section>

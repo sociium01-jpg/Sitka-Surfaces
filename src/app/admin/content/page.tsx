@@ -20,10 +20,15 @@ export default function AdminContent() {
 
   const pages = [
     { key: 'home', name: 'Home Page' },
-    { key: 'plywood', name: 'Plywood Hub' },
-    { key: 'laminates', name: 'Laminates Hub' },
-    { key: 'veneer', name: 'Veneer Hub' },
-    { key: 'decoratives', name: 'Decoratives Hub' },
+    { key: 'plywood', name: 'Plywood' },
+    { key: 'laminates', name: 'Laminates' },
+    { key: 'veneer', name: 'Veneer' },
+    { key: 'decoratives', name: 'Decoratives' },
+    { key: 'about', name: 'About' },
+    { key: 'contact', name: 'Contact' },
+    { key: 'inspiration', name: 'Inspiration' },
+    { key: 'journal', name: 'Journal' },
+    { key: 'terms', name: 'Terms' },
   ];
 
   // Define editable schema metadata per page
@@ -55,6 +60,30 @@ export default function AdminContent() {
     decoratives: [
       { section: 'intro', key: 'headline', label: 'Intro Headline Title', type: 'text' },
       { section: 'intro', key: 'body', label: 'Intro Paragraph Details', type: 'textarea' },
+    ],
+    about: [
+      { section: 'intro', key: 'title', label: 'About Title', type: 'text' },
+      { section: 'intro', key: 'body', label: 'About Page Body Copy', type: 'textarea' },
+      { section: 'manifesto', key: 'title', label: 'About Manifesto Title', type: 'text' },
+      { section: 'manifesto', key: 'text', label: 'About Manifesto Copy', type: 'textarea' },
+    ],
+    contact: [
+      { section: 'header', key: 'title', label: 'Contact Header Title', type: 'text' },
+      { section: 'header', key: 'body', label: 'Contact Header Description', type: 'textarea' },
+      { section: 'office', key: 'address', label: 'Office Address Spec', type: 'textarea' },
+      { section: 'office', key: 'phone', label: 'Office Phone Contact', type: 'text' },
+    ],
+    inspiration: [
+      { section: 'header', key: 'title', label: 'Inspiration Header Title', type: 'text' },
+      { section: 'header', key: 'body', label: 'Inspiration Header Description', type: 'textarea' },
+    ],
+    journal: [
+      { section: 'header', key: 'title', label: 'Journal Header Title', type: 'text' },
+      { section: 'header', key: 'body', label: 'Journal Header Description', type: 'textarea' },
+    ],
+    terms: [
+      { section: 'terms', key: 'title', label: 'Terms Page Title', type: 'text' },
+      { section: 'terms', key: 'body', label: 'Terms Page Body Copy', type: 'textarea' },
     ],
   };
 
@@ -135,7 +164,7 @@ export default function AdminContent() {
         </div>
 
         {/* Page Selector Tabs */}
-        <div className="flex gap-2 bg-ink-2 p-1 border border-line rounded-sm">
+        <div className="flex gap-2 bg-ink-2 p-1 border border-line rounded-sm overflow-x-auto max-w-full custom-scrollbar shrink-0">
           {pages.map(p => (
             <button
               key={p.key}

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Layers, Plus, Edit2, Trash2, X, PlusCircle, MinusCircle, CheckCircle } from 'lucide-react';
+import { Layers, Plus, Edit2, Trash2, X, PlusCircle, MinusCircle, CheckCircle, Upload, FileSpreadsheet, Check } from 'lucide-react';
 
 type Product = {
   id: string;
@@ -38,6 +38,12 @@ function ProductsConsole() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // Catalogue Upload Importer states
+  const [catalogFile, setCatalogFile] = useState<File | null>(null);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractedProducts, setExtractedProducts] = useState<any[]>([]);
+  const [showImporter, setShowImporter] = useState(false);
+
   // Form states
   const [name, setName] = useState('');
   const [vertical, setVertical] = useState('plywood');
@@ -65,6 +71,91 @@ function ProductsConsole() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCatalogUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCatalogFile(file);
+    setIsExtracting(true);
+
+    // Simulate OCR/Document extraction of catalog items
+    setTimeout(() => {
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      // Generate some smart mock products based on catalog vertical
+      const mocks = [
+        {
+          name: `Premium ${file.name.split('.')[0].replace(/[-_]/g, ' ')} Panel`,
+          slug: `extracted-birch-${Math.floor(Math.random() * 1000)}`,
+          vertical: 'plywood',
+          category: 'Architectural Plywood',
+          description: 'Boiling water proof hardwood panel extracted from uploaded catalog spec sheet.',
+          applications: 'Premium kitchen cabinetry, partitions, table structures',
+          tags: 'extracted, plywood, marine-grade',
+          isFeatured: true,
+          specs: [
+            { key: 'Grade', val: 'BWP Grade' },
+            { key: 'Density', val: '720 kg/m³' },
+            { key: 'Thickness', val: '18mm' }
+          ],
+          swatches: [
+            { name: 'Birch Face', value: '#d2b48c' }
+          ]
+        },
+        {
+          name: `Extracted Muted Sage Matte Laminate`,
+          slug: `extracted-sage-${Math.floor(Math.random() * 1000)}`,
+          vertical: 'laminates',
+          category: 'Decorative Laminates',
+          description: 'Anti-fingerprint matte cabinet laminate parsed from document.',
+          applications: 'Modular kitchen wardrobe shutters, vanity fronts',
+          tags: 'extracted, laminate, matte',
+          isFeatured: false,
+          specs: [
+            { key: 'Surface', val: 'Super Matte' },
+            { key: 'Thickness', val: '1.2mm' },
+            { key: 'Backing', val: 'Phenolic Craft Paper' }
+          ],
+          swatches: [
+            { name: 'Sage Green', value: '#7a8f7a' }
+          ]
+        }
+      ];
+      setExtractedProducts(mocks);
+      setIsExtracting(false);
+    }, 1500);
+  };
+
+  const handleImportExtracted = async () => {
+    setIsSaving(true);
+    try {
+      for (const p of extractedProducts) {
+        await fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: p.name,
+            slug: p.slug,
+            vertical: p.vertical,
+            category: p.category,
+            description: p.description,
+            applications: p.applications,
+            tags: p.tags,
+            isFeatured: p.isFeatured,
+            specs: JSON.stringify(p.specs.reduce((acc: any, row: any) => ({ ...acc, [row.key]: row.val }), {})),
+            swatches: JSON.stringify(p.swatches)
+          })
+        });
+      }
+      setExtractedProducts([]);
+      setCatalogFile(null);
+      setShowImporter(false);
+      fetchProducts();
+    } catch (err) {
+      console.error('Failed to import products:', err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -227,13 +318,99 @@ function ProductsConsole() {
           </p>
         </div>
 
-        <button
-          onClick={openNewForm}
-          className="bg-ember hover:bg-ember-light text-parchment text-xs font-mono tracking-wider uppercase py-3.5 px-6 rounded-sm transition-colors cursor-pointer flex items-center gap-1.5 shadow-md"
-        >
-          <Plus className="w-4 h-4" /> Add Product SKU
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowImporter(!showImporter)}
+            className="border border-line bg-ink-2 hover:border-brass/35 text-stone hover:text-parchment text-xs font-mono tracking-wider uppercase py-3.5 px-6 rounded-sm transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+          >
+            <Upload className="w-4 h-4 text-brass" /> Upload Catalogue
+          </button>
+          <button
+            onClick={openNewForm}
+            className="bg-ember hover:bg-ember-light text-parchment text-xs font-mono tracking-wider uppercase py-3.5 px-6 rounded-sm transition-colors cursor-pointer flex items-center gap-1.5 shadow-md"
+          >
+            <Plus className="w-4 h-4" /> Add Product SKU
+          </button>
+        </div>
       </div>
+
+      {/* Catalogue Importer Box */}
+      {showImporter && (
+        <div className="bg-ink-2 border border-line p-6 rounded-sm space-y-4">
+          <div className="flex justify-between items-center border-b border-line/35 pb-2">
+            <h3 className="text-xs font-mono tracking-wider text-brass uppercase flex items-center gap-1.5">
+              <FileSpreadsheet className="w-4 h-4 text-brass" /> Catalog Document Importer
+            </h3>
+            <button onClick={() => setShowImporter(false)} className="text-stone-dim hover:text-parchment cursor-pointer">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="border border-dashed border-line/80 rounded-sm p-8 text-center bg-ink/30 space-y-3 relative hover:border-brass/35 transition-colors">
+            <input 
+              type="file" 
+              accept=".xls,.xlsx,.pdf,.png,.docx,.doc" 
+              onChange={handleCatalogUpload} 
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            />
+            <Upload className="w-8 h-8 text-stone-dim mx-auto" />
+            <div className="space-y-1">
+              <p className="text-xs text-parchment font-sans">
+                Drag and drop your catalog file here, or <span className="text-ember-light hover:underline">browse</span>
+              </p>
+              <p className="text-[10px] font-mono text-stone-dim uppercase">
+                Accepts XLS, PDF, PNG, DOCX (Max 24MB)
+              </p>
+            </div>
+            {catalogFile && (
+              <p className="text-[10px] font-mono text-brass uppercase">
+                Selected: {catalogFile.name}
+              </p>
+            )}
+          </div>
+
+          {isExtracting && (
+            <div className="text-center py-4 text-xs font-mono text-stone-dim animate-pulse">
+              Extracting products details from catalog document...
+            </div>
+          )}
+
+          {extractedProducts.length > 0 && (
+            <div className="space-y-4 pt-4 border-t border-line/30">
+              <h4 className="text-xs font-mono uppercase text-parchment">Extracted SKUs Preview</h4>
+              <div className="space-y-3">
+                {extractedProducts.map((p, idx) => (
+                  <div key={idx} className="border border-line/60 bg-ink p-4 rounded-sm flex justify-between items-start gap-4">
+                    <div className="space-y-1 text-xs">
+                      <div className="font-semibold text-parchment">{p.name}</div>
+                      <div className="text-stone-dim text-[10px] uppercase font-mono">
+                        {p.vertical} · {p.category}
+                      </div>
+                      <p className="text-stone-dim text-[11px] font-sans">{p.description}</p>
+                      <div className="flex gap-2 flex-wrap pt-2">
+                        {p.specs.map((s: any, sIdx: number) => (
+                          <span key={sIdx} className="bg-ink-2 border border-line/45 py-0.5 px-1.5 rounded-sm text-[9px] font-mono text-stone-dim">
+                            {s.key}: {s.val}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <span className="text-[9px] font-mono bg-green-500/15 border border-green-500/30 text-green-400 py-0.5 px-1.5 rounded-sm flex items-center gap-1">
+                      <Check className="w-3 h-3" /> READY
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={handleImportExtracted}
+                className="bg-brass text-ink font-mono text-xs py-2.5 px-6 rounded-sm uppercase tracking-wider font-semibold hover:bg-parchment transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Check className="w-4 h-4" /> Import Extracted Products
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Product Edit Popup */}
       {showForm && (

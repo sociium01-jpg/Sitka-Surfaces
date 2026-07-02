@@ -7,6 +7,9 @@ type MediaSlot = {
   mediaType: string;
   mediaUrl: string;
   fallbackUrl: string | null;
+  eyebrow?: string | null;
+  heading?: string | null;
+  subheading?: string | null;
 };
 
 export default function AdminMedia() {
@@ -35,7 +38,7 @@ export default function AdminMedia() {
           const updated = { ...data.media };
           pages.forEach(p => {
             if (!updated[p.key]) {
-              updated[p.key] = { mediaType: 'image', mediaUrl: '', fallbackUrl: '' };
+              updated[p.key] = { mediaType: 'image', mediaUrl: '', fallbackUrl: '', eyebrow: '', heading: '', subheading: '' };
             }
           });
           setMediaMap(updated);
@@ -182,8 +185,44 @@ export default function AdminMedia() {
                     value={item.mediaUrl}
                     onChange={(e) => handleChange(p.key, 'mediaUrl', e.target.value)}
                     placeholder="e.g. https://images.unsplash.com/... or /videos/bg.mp4"
-                    className="w-full bg-ink border border-line rounded-sm p-3 text-parchment text-xs focus:outline-none focus:border-ember focus:ring-1 focus:ring-ember"
+                    className="w-full bg-ink border border-line rounded-sm p-3 text-parchment text-xs focus:outline-none focus:border-ember focus:ring-1 focus:ring-ember font-sans normal-case"
                   />
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 border-t border-line/35 pt-4">
+                  <span className="text-[9px] font-mono tracking-wider uppercase text-brass font-bold">Text Heading Overlays</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1 col-span-2 sm:col-span-1">
+                      <label className="block text-[9px] font-mono tracking-wider uppercase text-stone-dim">Eyebrow Text</label>
+                      <input 
+                        type="text"
+                        value={item.eyebrow || ''}
+                        onChange={(e) => handleChange(p.key, 'eyebrow', e.target.value)}
+                        placeholder="e.g. Sitka Surfaces"
+                        className="w-full bg-ink border border-line rounded-sm p-3 text-parchment text-xs focus:outline-none focus:border-ember focus:ring-1 focus:ring-ember font-sans normal-case"
+                      />
+                    </div>
+                    <div className="space-y-1 col-span-2 sm:col-span-1">
+                      <label className="block text-[9px] font-mono tracking-wider uppercase text-stone-dim">Main Heading Title</label>
+                      <input 
+                        type="text"
+                        value={item.heading || ''}
+                        onChange={(e) => handleChange(p.key, 'heading', e.target.value)}
+                        placeholder="e.g. Every surface tells you what..."
+                        className="w-full bg-ink border border-line rounded-sm p-3 text-parchment text-xs focus:outline-none focus:border-ember focus:ring-1 focus:ring-ember font-sans normal-case"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-[9px] font-mono tracking-wider uppercase text-stone-dim">Subheading / Description</label>
+                    <textarea 
+                      value={item.subheading || ''}
+                      onChange={(e) => handleChange(p.key, 'subheading', e.target.value)}
+                      placeholder="e.g. High-performance architectural plywood, calibrated laminates..."
+                      rows={2}
+                      className="w-full bg-ink border border-line rounded-sm p-3 text-parchment text-xs focus:outline-none focus:border-ember focus:ring-1 focus:ring-ember font-sans normal-case"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex justify-end pt-2">

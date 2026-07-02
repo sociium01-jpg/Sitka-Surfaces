@@ -14,6 +14,8 @@ type Post = {
   author: string;
   status: string; // 'DRAFT' | 'PUBLISHED'
   publishedAt: string;
+  mediaType?: string;
+  mediaUrl?: string;
 };
 
 function BlogConsole() {
@@ -33,6 +35,8 @@ function BlogConsole() {
     content: '',
     author: 'Sitka Editor',
     status: 'PUBLISHED',
+    mediaType: 'image',
+    mediaUrl: '',
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -78,6 +82,8 @@ function BlogConsole() {
       content: '',
       author: 'Sitka Editor',
       status: 'PUBLISHED',
+      mediaType: 'image',
+      mediaUrl: '',
     });
     setEditingId(null);
     setError('');
@@ -92,6 +98,8 @@ function BlogConsole() {
       content: p.content,
       author: p.author,
       status: p.status,
+      mediaType: p.mediaType || 'image',
+      mediaUrl: p.mediaUrl || '',
     });
     setEditingId(p.id);
     setError('');
@@ -246,6 +254,31 @@ function BlogConsole() {
                     <option value="DRAFT">Draft</option>
                   </select>
                 </div>
+                <div className="space-y-1">
+                  <label className="block text-[9px] font-mono tracking-wider uppercase text-stone-dim font-semibold">Media Type</label>
+                  <select 
+                    name="mediaType"
+                    value={formData.mediaType}
+                    onChange={handleTextChange}
+                    className="w-full bg-ink border border-line rounded-sm p-3 text-parchment text-xs focus:outline-none focus:border-ember"
+                  >
+                    <option value="image">Image Asset</option>
+                    <option value="video">Video Loop</option>
+                    <option value="none">No Media</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[9px] font-mono tracking-wider uppercase text-stone-dim font-semibold">Media Asset Path / URL</label>
+                <input 
+                  type="text"
+                  name="mediaUrl"
+                  value={formData.mediaUrl}
+                  onChange={handleTextChange}
+                  className="w-full bg-ink border border-line rounded-sm p-3 text-parchment text-xs focus:outline-none focus:border-ember font-sans normal-case"
+                  placeholder="e.g. /images/news-hero.jpg or https://youtube-nocookie.com/embed/..."
+                />
               </div>
 
               <div className="space-y-1">
