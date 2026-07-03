@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import MobileAppNav from "@/components/MobileAppNav";
 import BrochureModal from "@/components/BrochureModal";
 import SiteLoader from "@/components/SiteLoader";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -62,6 +63,7 @@ export default function RootLayout({
             <Footer />
             <MobileAppNav />
             <BrochureModal />
+            <Analytics />
           </ModalProvider>
         </ThemeProvider>
       </body>
